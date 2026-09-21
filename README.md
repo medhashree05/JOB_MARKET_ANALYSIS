@@ -107,3 +107,37 @@ terminal session before running the Python scripts — the venv doesn't persist
 across shells. If `start-dfs.sh` gives `Connection refused` on later commands,
 Hadoop just isn't running yet; if you get `Name node is in safe mode` right
 after starting it, wait ~15–30s and retry (or run `hdfs dfsadmin -safemode leave`).
+
+## Git workflow
+
+`.gitignore` excludes the large/generated files (`.venv/`, raw `.xlsx`/`.csv`,
+`data/cleaned/*.csv`, Hadoop/Hive/Pig log junk) so the repo only carries
+scripts, docs, and config — not multi-hundred-MB data files.
+
+```bash
+git add .
+git status   # sanity check BEFORE committing — confirm none of these show up:
+             #   task1_hdfs/.venv/
+             #   data/raw/*.xlsx, data/raw/*.csv
+             #   data/cleaned/*.csv
+git commit -m "Describe what you changed"
+git push
+```
+
+If a data file or `.venv/` ever shows up as staged (usually because it got
+committed before `.gitignore` existed), untrack it rather than just deleting
+it — deleting alone won't stop git from tracking it:
+
+```bash
+git rm -r --cached task1_hdfs/.venv data/raw/*.csv data/raw/*.xlsx data/cleaned/*.csv 2>/dev/null
+git commit -m "Remove large/generated files from tracking"
+git push
+```
+
+**For teammates picking up Task 2/3:** after `git pull`, the `data/` files
+won't be there (gitignored) — either regenerate them locally with the Task 1
+scripts above, or pull the cleaned CSV straight from HDFS if you're sharing
+the same cluster:
+```bash
+hdfs dfs -get /jobmarket/cleaned/jobs_cleaned.csv data/cleaned/
+```
