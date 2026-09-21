@@ -1,0 +1,36 @@
+# --- Data files (large; regenerate with task1_hdfs/scripts, don't commit) ---
+data/raw/*.xlsx
+data/raw/*.csv
+data/cleaned/*.csv
+!data/raw/.gitkeep
+!data/cleaned/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# --- Pig / Hive / Hadoop local artifacts ---
+*.log
+pig_*.log
+derby.log
+metastore_db/
+hive.log
+*.hql~
+*.pig~
+
+# --- OS / editor junk ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Output/scratch (regenerate, don't commit) ---
+task2_pig/output/
+task3_hive/output/
+*.tmp
