@@ -2,7 +2,7 @@
 -- TASK 2: JOB MARKET AGGREGATION USING APACHE PIG
 -- ============================================================
 
-REGISTER '/home/deepanjali/pig-0.18.0/lib/piggybank.jar';
+REGISTER '/usr/local/pig/lib/piggybank.jar';
 
 -- ============================================================
 -- 1. LOAD CLEANED DATA
@@ -58,7 +58,7 @@ jobs_normalized = FOREACH jobs GENERATE
 
 STORE jobs_normalized
     INTO '/jobmarket/processed/jobs'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 3. CREATE JOB-SKILL RECORDS
@@ -94,7 +94,7 @@ skills_unique = DISTINCT skills_clean;
 
 STORE skills_unique
     INTO '/jobmarket/processed/skills'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 4. SKILL DEMAND AGGREGATION
@@ -110,7 +110,7 @@ skill_demand = ORDER skill_demand BY job_count DESC;
 
 STORE skill_demand
     INTO '/jobmarket/processed/skills_demand'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 5. LOCATION DEMAND AGGREGATION
@@ -126,7 +126,7 @@ location_demand = ORDER location_demand BY job_count DESC;
 
 STORE location_demand
     INTO '/jobmarket/processed/location'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 6. SALARY AGGREGATION BY ROLE
@@ -150,7 +150,7 @@ role_salary = FOREACH role_salary_group GENERATE
 
 STORE role_salary
     INTO '/jobmarket/processed/salary'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 7. SALARY BY LOCATION
@@ -167,7 +167,7 @@ location_salary = FOREACH location_salary_group GENERATE
 
 STORE location_salary
     INTO '/jobmarket/processed/salary_location'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- 8. TIME / RECENCY BUCKETS
@@ -195,7 +195,7 @@ time_demand = FOREACH time_group GENERATE
 
 STORE time_demand
     INTO '/jobmarket/processed/time_based'
-    USING PigStorage(',');
+    USING org.apache.pig.piggybank.storage.CSVExcelStorage(',');
 
 -- ============================================================
 -- END OF TASK 2
