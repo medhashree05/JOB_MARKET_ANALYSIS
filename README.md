@@ -8,8 +8,8 @@ Dataset: [Indian Job Market Dataset 2025](.) (Naukri-style scrape, ~97.9K job po
 | Task | Owner | Status |
 |---|---|---|
 | Task 1 — Dataset + HDFS | you | ✅ Done |
-| Task 2 — Pig (aggregation) | teammate | ⬜ Not started — see below |
-| Task 3 — Hive (analytics) | teammate | ⬜ Not started — see below |
+| Task 2 — Pig (aggregation) | teammate | ✅ Implemented and verified |
+| Task 3 — Hive (analytics) | teammate | ✅ Implemented and verified |
 
 ## Pipeline
 
@@ -22,7 +22,7 @@ Cleaned + Validated Dataset  (/jobmarket/cleaned/jobs_cleaned.csv)
         ↓
 Task 2: Pig    — normalize, split skills, group by role/location/skill, aggregate salary
         ↓
-Transformed + Aggregated Data  (/jobmarket/processed/{jobs,skills,location,salary,time_based}/)
+Transformed + Aggregated Data  (/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/)
         ↓
 Task 3: Hive   — tables + queries: demand by role/location/skill, salary trends, emerging skills
         ↓
@@ -40,8 +40,8 @@ Final Job Market Intelligence Report
 ├── task1_hdfs/
 │   ├── scripts/         # 01_convert_xlsx_to_csv.py, 02_clean_data.py, 03_hdfs_load.sh, 04_verify_hdfs.sh
 │   └── README.md        # full schema contract + cleaning decisions — READ THIS before Task 2
-├── task2_pig/           # <- Pig scripts go here (teammate)
-├── task3_hive/          # <- Hive scripts/queries go here (teammate)
+├── task2_pig/           # Pig scripts and reproducible runner
+├── task3_hive/          # Hive scripts, queries, runner, and status report
 └── README.md            # this file
 ```
 
@@ -74,16 +74,27 @@ Read cleaned data from `/jobmarket/cleaned/jobs_cleaned.csv`, then:
 3. Normalize job titles / locations
 4. Split `skills` on `,` into individual skill rows
 5. Group by job role, location, and skill; compute counts and avg/min/max salary
-6. Write outputs to `/jobmarket/processed/{jobs,skills,location,salary,time_based}/`
+6. Write outputs to `/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/`
+
+Run the reproducible Pig stage with:
+
+```bash
+bash task2_pig/scripts/run_task2_pig.sh
+```
 
 ## Task 3 (Hive) — what's expected
 
 Read processed data from `/jobmarket/processed/`, then:
-1. Create Hive DB + tables: `jobs`, `job_skills`, `job_locations`, `job_salary`, `skill_trends`
+1. Create Hive DB + tables: `jobs`, `job_skills`, `job_locations`, `job_salary`, `salary_by_location`, `skills_demand`, `time_based`, `skill_trends`
 2. Run the analyses: top job roles, top skills, demand by location, salary by role/location,
    skill+role combinations, and skill-demand-over-time / emerging skills
    (see the time-trend caveat in `task1_hdfs/README.md` first)
 3. Produce the final job market intelligence output
+
+The complete reproduction guide and current implementation notes are in
+[`task3_hive/PROJECT_STATUS.md`](task3_hive/PROJECT_STATUS.md). The dataset's
+`posted_raw` field is mostly relative text, so skill trends are explicit-year-only
+when a year is present; they are not a fabricated 2024/2025/2026 history.
 
 ## Setup
 

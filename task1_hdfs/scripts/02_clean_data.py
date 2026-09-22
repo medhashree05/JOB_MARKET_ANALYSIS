@@ -78,6 +78,7 @@ def main():
     for c in str_cols:
         df[c] = df[c].astype(str).str.strip()
         df[c] = df[c].replace({"nan": ""})
+        df[c] = df[c].str.replace(r"[\r\n]+", " ", regex=True).str.replace(r"\s+", " ", regex=True).str.strip()
 
     # 3. Remove exact duplicate rows, then duplicate job_id (keep first)
     n_before = len(df)

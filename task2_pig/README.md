@@ -133,6 +133,24 @@ pig -x mapreduce task2_pig/scripts/task2_jobmarket.pig
 If previous outputs exist, remove them before rerunning:
 
 hdfs dfs -rm -r -f /jobmarket/processed
+
+For a reproducible WSL run, use the project runner. It configures Java,
+Hadoop, and Pig, starts the MapReduce JobHistoryServer at `localhost:10020`,
+runs Pig with `-stop_on_failure`, and verifies every output directory before
+Hive is started:
+
+```bash
+bash task2_pig/scripts/run_task2_pig.sh
+```
+
+If YARN reports `FinalApplicationStatus=SUCCEEDED` but Pig retries port
+`10020`, the computation succeeded but the JobHistoryServer was unavailable
+for statistics collection. Start it and rerun the runner:
+
+```bash
+mapred --daemon start historyserver
+jps | grep JobHistoryServer
+```
 Verify Outputs
 
 List the processed directories:
