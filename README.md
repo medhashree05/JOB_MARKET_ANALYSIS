@@ -152,3 +152,68 @@ the same cluster:
 ```bash
 hdfs dfs -get /jobmarket/cleaned/jobs_cleaned.csv data/cleaned/
 ```
+
+## Interactive Dashboard
+
+A separate, self-contained Streamlit dashboard in [`dashboard/`](dashboard/)
+presents the results of the pipeline above for a live demo — KPIs, skill
+demand, salary analytics, location/hiring, experience breakdowns, an honest
+treatment of "emerging skills" given the dataset's lack of real historical
+dates, and a searchable data explorer with CSV export.
+
+**It does not require Hadoop, Pig, or Hive to be running.** It reads the raw
+Excel dataset and replicates the exact Task 1 cleaning contract
+(`task1_hdfs/README.md`) by default, and will automatically prefer real
+exported Hive/Pig CSVs if you drop them into `dashboard/data/` — the active
+data source is always shown in the UI.
+
+### Architecture
+
+```
+dashboard/
+├── app.py            # UI + page routing
+├── data_loader.py     # cleaning + optional Hive/Pig CSV adapters
+├── analytics.py       # KPI / aggregation logic
+├── charts.py          # Plotly figure builders
+└── requirements.txt
+```
+
+### Prerequisites
+
+- Python 3.9+
+- `dataset/indian-job-market-dataset-2025.xlsx` present (already in the repo)
+
+### Installation (Windows PowerShell)
+
+```powershell
+cd D:\JOB_MARKET_ANALYSIS
+python -m venv .venv-dashboard
+.\.venv-dashboard\Scripts\Activate.ps1
+pip install -r dashboard\requirements.txt
+```
+
+### Run it
+
+```powershell
+streamlit run dashboard/app.py
+```
+
+Open **http://localhost:8501**.
+
+### Configuring Hive CSV exports (optional)
+
+Drop `jobs_cleaned.csv` (Task 1 schema) or `time_based.csv`
+(`period, skill, postings`) into `dashboard/data/` and the dashboard will use
+them automatically instead of recomputing from the raw Excel file — see
+[`dashboard/README.md`](dashboard/README.md) for the full contract.
+
+### Screenshots
+
+_Add screenshots here after running the dashboard locally, e.g.:_
+```markdown
+![Executive Overview](docs/screenshots/executive-overview.png)
+![Skill Demand Intelligence](docs/screenshots/skill-demand.png)
+```
+
+Full dashboard setup, page-by-page documentation, and known data
+limitations: [`dashboard/README.md`](dashboard/README.md).
