@@ -34,3 +34,14 @@ Thumbs.db
 task2_pig/output/
 task3_hive/output/
 *.tmp
+
+# --- Dashboard: optional local Hive/Pig CSV exports (regenerate, don't commit) ---
+dashboard/data/*.csv
+!dashboard/data/.gitkeep
+
+# Dashboard temporary exports and backups
+dashboard/app_backup.py
+dashboard/data_loader_backup.py
+dashboard/data/jobs_cleaned_pipe.txt
+dashboard/data/jobs_cleaned_safe.txt
+dashboard/data/time_based_safe.txt
