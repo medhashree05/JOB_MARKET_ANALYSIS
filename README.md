@@ -3,14 +3,6 @@
 
 Dataset: [Indian Job Market Dataset 2025](.) (Naukri-style scrape, ~97.9K job postings)
 
-## Team split
-
-| Task | Owner | Status |
-|---|---|---|
-| Task 1 — Dataset + HDFS | you | ✅ Done |
-| Task 2 — Pig (aggregation) | teammate | ✅ Implemented and verified |
-| Task 3 — Hive (analytics) | teammate | ✅ Implemented and verified |
-
 ## Pipeline
 
 ```
