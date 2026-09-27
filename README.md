@@ -1,97 +1,155 @@
-# Large-Scale Job Market Intelligence and Emerging Skill Demand Analysis
-### Using HDFS, Pig, and Hive
+# Job Market Intelligence & Emerging Skill Demand Analysis
 
-Dataset: [Indian Job Market Dataset 2025](.) (Naukri-style scrape, ~97.9K job postings)
+A large-scale data pipeline and analytics platform that processes ~97,900
+Indian job postings to surface hiring trends, in-demand skills, salary
+benchmarks, and location-based hiring patterns — built on **HDFS, Apache
+Pig, and Apache Hive**, with an interactive **Streamlit dashboard** as the
+presentation layer.
 
-## Pipeline
+---
+
+## Overview
+
+Raw job-posting data is rarely analysis-ready: inconsistent locations,
+free-text skill lists, mixed currencies, undisclosed salaries, and
+duplicate records. This project builds a repeatable big-data pipeline that
+takes a ~98K-row raw dataset through ingestion, cleaning, large-scale
+transformation, and SQL-style analytics — then exposes the results through
+a live, filterable dashboard suitable for stakeholders who don't touch the
+underlying infrastructure.
+
+**Dataset:** Indian Job Market Dataset 2025 (Naukri-style listings, ~97.9K
+postings, 17 raw fields).
+
+## Pipeline Architecture
 
 ```
-Raw Job Market Dataset (.xlsx)
+Raw Job Postings (.xlsx)
         ↓
-Task 1: HDFS   — convert, clean, validate, dedupe, load to HDFS
+Stage 1 — HDFS Ingestion
+  Convert, clean, validate, de-duplicate, load into distributed storage
         ↓
-Cleaned + Validated Dataset  (/jobmarket/cleaned/jobs_cleaned.csv)
+Cleaned & Validated Dataset (/jobmarket/cleaned/jobs_cleaned.csv)
         ↓
-Task 2: Pig    — normalize, split skills, group by role/location/skill, aggregate salary
+Stage 2 — Apache Pig
+  Normalize job titles/locations, split multi-value skill fields,
+  aggregate by role, location, and skill; compute salary statistics
         ↓
-Transformed + Aggregated Data  (/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/)
+Transformed & Aggregated Data
+  (/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/)
         ↓
-Task 3: Hive   — tables + queries: demand by role/location/skill, salary trends, emerging skills
+Stage 3 — Apache Hive
+  Structured tables + analytical queries: demand by role/location/skill,
+  salary trends, skill co-occurrence, emerging-skill signals
         ↓
-Final Job Market Intelligence Report
+Stage 4 — Interactive Dashboard (Streamlit)
+  Executive KPIs, skill intelligence, salary analytics, location and
+  experience breakdowns, and a searchable data explorer
 ```
 
-## Project structure
+## Repository Structure
 
 ```
 .
-├── data/
-│   ├── raw/            # source .xlsx + converted jobs_raw.csv (also mirrored in HDFS /jobmarket/raw/)
-│   └── cleaned/         # jobs_cleaned.csv (also mirrored in HDFS /jobmarket/cleaned/)
-├── docs/                # write-ups, final report, diagrams
-├── task1_hdfs/
-│   ├── scripts/         # 01_convert_xlsx_to_csv.py, 02_clean_data.py, 03_hdfs_load.sh, 04_verify_hdfs.sh
-│   └── README.md        # full schema contract + cleaning decisions — READ THIS before Task 2
-├── task2_pig/           # Pig scripts and reproducible runner
-├── task3_hive/          # Hive scripts, queries, runner, and status report
-└── README.md            # this file
+├── dataset/
+│   └── indian-job-market-dataset-2025.xlsx   # source dataset
+├── task1_hdfs/          # ingestion, cleaning, HDFS load
+│   ├── scripts/
+│   └── README.md         # full schema contract and cleaning decisions
+├── task2_pig/           # large-scale Pig transformations
+│   ├── scripts/
+│   └── README.md
+├── task3_hive/          # Hive tables, analytical queries
+│   ├── scripts/
+│   └── README.md
+├── dashboard/            # interactive Streamlit dashboard (presentation layer)
+│   ├── app.py
+│   ├── data_loader.py
+│   ├── analytics.py
+│   ├── charts.py
+│   └── README.md
+└── README.md             # this file
 ```
 
-## Where Task 1 left off (start here for Task 2)
+## Data Engineering Stages
 
-- **Input for Pig**: HDFS path `/jobmarket/cleaned/jobs_cleaned.csv`
-- **Full column list, types, and cleaning caveats**: see [`task1_hdfs/README.md`](task1_hdfs/README.md)
-  — in particular, note that `skills` is **comma-separated** (not semicolon like the
-  original spec example) and there's an important caveat about `posted_raw` not
-  being a true date (relative-time text only) — read it before doing the
-  time-based trend analysis in Task 3.
-- To regenerate everything from scratch:
-  ```bash
-  cd task1_hdfs
-  uv venv && source .venv/bin/activate
-  uv pip install -r requirements.txt
-  cd scripts
-  python3 01_convert_xlsx_to_csv.py
-  python3 02_clean_data.py
-  start-dfs.sh
-  bash 03_hdfs_load.sh
-  bash 04_verify_hdfs.sh
-  ```
+### Stage 1 — HDFS Ingestion & Cleaning
 
-## Task 2 (Pig) — what's expected
+Converts the raw Excel export to CSV, applies validation and cleaning
+(de-duplication, missing-field checks, salary and experience sanity
+checks), and loads the result into HDFS.
 
-Read cleaned data from `/jobmarket/cleaned/jobs_cleaned.csv`, then:
-1. Define schema matching `task1_hdfs/README.md`
-2. Filter any remaining invalid records
-3. Normalize job titles / locations
-4. Split `skills` on `,` into individual skill rows
-5. Group by job role, location, and skill; compute counts and avg/min/max salary
-6. Write outputs to `/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/`
+Full column definitions, types, and cleaning decisions are documented in
+[`task1_hdfs/README.md`](task1_hdfs/README.md) — notably, the `skills`
+field is comma-separated, and `posted_raw` (the posting-recency field) is
+relative text rather than an absolute date, which shapes how later
+time-based analysis is scoped.
 
-Run the reproducible Pig stage with:
+```bash
+cd task1_hdfs
+uv venv && source .venv/bin/activate
+uv pip install -r requirements.txt
+cd scripts
+python3 01_convert_xlsx_to_csv.py
+python3 02_clean_data.py
+start-dfs.sh
+bash 03_hdfs_load.sh
+bash 04_verify_hdfs.sh
+```
+
+### Stage 2 — Apache Pig Transformations
+
+Reads the cleaned dataset from `/jobmarket/cleaned/jobs_cleaned.csv`,
+normalizes job titles and locations, explodes the skills field into
+individual rows, and aggregates postings by role, location, and skill —
+including salary statistics per group.
 
 ```bash
 bash task2_pig/scripts/run_task2_pig.sh
 ```
 
-## Task 3 (Hive) — what's expected
+Outputs land in `/jobmarket/processed/{jobs,skills,skills_demand,location,salary,salary_location,time_based}/`.
 
-Read processed data from `/jobmarket/processed/`, then:
-1. Create Hive DB + tables: `jobs`, `job_skills`, `job_locations`, `job_salary`, `salary_by_location`, `skills_demand`, `time_based`, `skill_trends`
-2. Run the analyses: top job roles, top skills, demand by location, salary by role/location,
-   skill+role combinations, and skill-demand-over-time / emerging skills
-   (see the time-trend caveat in `task1_hdfs/README.md` first)
-3. Produce the final job market intelligence output
+### Stage 3 — Apache Hive Analytics
 
-The complete reproduction guide and current implementation notes are in
-[`task3_hive/PROJECT_STATUS.md`](task3_hive/PROJECT_STATUS.md). The dataset's
-`posted_raw` field is mostly relative text, so skill trends are explicit-year-only
-when a year is present; they are not a fabricated 2024/2025/2026 history.
+Builds Hive tables (`jobs`, `job_skills`, `job_locations`, `job_salary`,
+`salary_by_location`, `skills_demand`, `time_based`, `skill_trends`) over
+the Pig output and runs the core analytical queries: top roles and skills,
+demand by location, salary benchmarking by role/location, and skill-demand
+patterns over the available time signal.
 
-## Setup
+Implementation notes and query details: [`task3_hive/PROJECT_STATUS.md`](task3_hive/PROJECT_STATUS.md).
 
-WSL's system Python is externally managed (plain `pip install` is blocked),
-so dependencies go into a `uv`-managed venv instead:
+### Stage 4 — Interactive Dashboard
+
+A self-contained Streamlit application in [`dashboard/`](dashboard/) that
+presents the pipeline's results through seven pages: Executive Overview,
+Skill Demand Intelligence, Salary Analytics, Location & Hiring, Experience
+& Job Roles, Emerging Skill Trends, and a filterable Data Explorer with CSV
+export.
+
+The dashboard runs standalone — **it does not require Hadoop, Pig, or Hive
+to be running.** By default it reads the raw dataset and applies the exact
+Stage 1 cleaning contract in-process; if real Hive/Pig exports are placed
+in `dashboard/data/`, it uses those instead and makes the active data
+source visible in the UI at all times.
+
+```powershell
+cd dashboard
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Open **http://localhost:8501**. Full page-by-page documentation and data
+adapter format: [`dashboard/README.md`](dashboard/README.md).
+
+## Environment Setup
+
+Hadoop, Pig, and Hive are assumed installed and available on `PATH`
+(tested under WSL). Python dependencies for the ingestion stage are
+managed with `uv`:
 
 ```bash
 cd task1_hdfs
@@ -100,112 +158,75 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 cd ..
 
-# Hadoop, Pig, Hive assumed installed in WSL and on PATH
-start-dfs.sh   # start HDFS before running task1 scripts
-jps            # confirm NameNode/DataNode are up
+start-dfs.sh   # start HDFS before running Stage 1 scripts
+jps            # confirm NameNode / DataNode are up
 ```
 
-Note: `source task1_hdfs/.venv/bin/activate` needs to be re-run in every new
-terminal session before running the Python scripts — the venv doesn't persist
-across shells. If `start-dfs.sh` gives `Connection refused` on later commands,
-Hadoop just isn't running yet; if you get `Name node is in safe mode` right
-after starting it, wait ~15–30s and retry (or run `hdfs dfsadmin -safemode leave`).
+If `start-dfs.sh` reports `Connection refused` on a later command, HDFS
+hasn't finished starting; a `Name node is in safe mode` message right after
+startup typically clears within 15–30 seconds (or run
+`hdfs dfsadmin -safemode leave`).
 
-## Git workflow
+## Data Integrity Principles
 
-`.gitignore` excludes the large/generated files (`.venv/`, raw `.xlsx`/`.csv`,
-`data/cleaned/*.csv`, Hadoop/Hive/Pig log junk) so the repo only carries
-scripts, docs, and config — not multi-hundred-MB data files.
+- No fabricated statistics: every KPI, chart, and figure is computed from
+  actual data, never hardcoded or estimated.
+- Undisclosed salaries are excluded from salary statistics rather than
+  treated as zero, and the number of excluded records is always disclosed.
+- Different currencies (INR/USD) are never averaged together.
+- Skill extraction is transparent and documented — normalized for
+  case/whitespace, de-duplicated within a posting, with alias mappings
+  disclosed rather than hidden.
+- Where the data cannot support a claim (e.g. a true multi-year
+  "emerging skill" trend, given the dataset's relative-text posting
+  recency field rather than an absolute date), the limitation is stated
+  explicitly instead of being papered over.
+
+## Version Control Notes
+
+`.gitignore` excludes generated and environment-specific files (virtual
+environments, raw/cleaned data exports, Hadoop/Hive/Pig logs) so the
+repository carries source code, scripts, and documentation rather than
+multi-hundred-megabyte data artifacts.
 
 ```bash
 git add .
-git status   # sanity check BEFORE committing — confirm none of these show up:
-             #   task1_hdfs/.venv/
-             #   data/raw/*.xlsx, data/raw/*.csv
-             #   data/cleaned/*.csv
-git commit -m "Describe what you changed"
+git status   # confirm no data files or virtual environments are staged
+git commit -m "Describe what changed"
 git push
 ```
 
-If a data file or `.venv/` ever shows up as staged (usually because it got
-committed before `.gitignore` existed), untrack it rather than just deleting
-it — deleting alone won't stop git from tracking it:
+If a data file or virtual environment was committed before `.gitignore`
+excluded it, remove it from tracking (this does not delete the local
+file):
 
 ```bash
 git rm -r --cached task1_hdfs/.venv data/raw/*.csv data/raw/*.xlsx data/cleaned/*.csv 2>/dev/null
-git commit -m "Remove large/generated files from tracking"
+git commit -m "Remove generated files from version control"
 git push
 ```
 
-**For teammates picking up Task 2/3:** after `git pull`, the `data/` files
-won't be there (gitignored) — either regenerate them locally with the Task 1
-scripts above, or pull the cleaned CSV straight from HDFS if you're sharing
-the same cluster:
+After cloning fresh, regenerate the cleaned dataset locally with the Stage
+1 scripts, or pull it directly from HDFS if a cluster is already running:
+
 ```bash
 hdfs dfs -get /jobmarket/cleaned/jobs_cleaned.csv data/cleaned/
 ```
 
-## Interactive Dashboard
+## Tech Stack
 
-A separate, self-contained Streamlit dashboard in [`dashboard/`](dashboard/)
-presents the results of the pipeline above for a live demo — KPIs, skill
-demand, salary analytics, location/hiring, experience breakdowns, an honest
-treatment of "emerging skills" given the dataset's lack of real historical
-dates, and a searchable data explorer with CSV export.
+| Layer | Technology |
+|---|---|
+| Distributed storage | HDFS |
+| Large-scale transformation | Apache Pig |
+| Analytical queries | Apache Hive |
+| Dashboard | Streamlit, Plotly |
+| Data processing | Python, Pandas |
 
-**It does not require Hadoop, Pig, or Hive to be running.** It reads the raw
-Excel dataset and replicates the exact Task 1 cleaning contract
-(`task1_hdfs/README.md`) by default, and will automatically prefer real
-exported Hive/Pig CSVs if you drop them into `dashboard/data/` — the active
-data source is always shown in the UI.
+## Screenshots
 
-### Architecture
-
-```
-dashboard/
-├── app.py            # UI + page routing
-├── data_loader.py     # cleaning + optional Hive/Pig CSV adapters
-├── analytics.py       # KPI / aggregation logic
-├── charts.py          # Plotly figure builders
-└── requirements.txt
-```
-
-### Prerequisites
-
-- Python 3.9+
-- `dataset/indian-job-market-dataset-2025.xlsx` present (already in the repo)
-
-### Installation (Windows PowerShell)
-
-```powershell
-cd D:\JOB_MARKET_ANALYSIS
-python -m venv .venv-dashboard
-.\.venv-dashboard\Scripts\Activate.ps1
-pip install -r dashboard\requirements.txt
-```
-
-### Run it
-
-```powershell
-streamlit run dashboard/app.py
-```
-
-Open **http://localhost:8501**.
-
-### Configuring Hive CSV exports (optional)
-
-Drop `jobs_cleaned.csv` (Task 1 schema) or `time_based.csv`
-(`period, skill, postings`) into `dashboard/data/` and the dashboard will use
-them automatically instead of recomputing from the raw Excel file — see
-[`dashboard/README.md`](dashboard/README.md) for the full contract.
-
-### Screenshots
-
-_Add screenshots here after running the dashboard locally, e.g.:_
+_Add dashboard screenshots here, e.g.:_
 ```markdown
 ![Executive Overview](docs/screenshots/executive-overview.png)
 ![Skill Demand Intelligence](docs/screenshots/skill-demand.png)
 ```
-
-Full dashboard setup, page-by-page documentation, and known data
-limitations: [`dashboard/README.md`](dashboard/README.md).
