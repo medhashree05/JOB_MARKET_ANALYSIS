@@ -226,7 +226,7 @@ hdfs dfs -get /jobmarket/cleaned/jobs_cleaned.csv data/cleaned/
 ## Screenshots
 
 _Add dashboard screenshots here, e.g.:_
-```markdown
+
 ![Executive Overview](docs/screenshots/executive-overview.png)
 ![Skill Demand Intelligence](docs/screenshots/skill-demand.png)
-```
+
