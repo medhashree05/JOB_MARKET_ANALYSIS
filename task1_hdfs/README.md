@@ -1,7 +1,5 @@
 # Task 1 — Dataset + HDFS
 
-Owner: (you)
-Status: ✅ Complete — handoff point for Task 2 (Pig)
 
 ## What this task does
 
