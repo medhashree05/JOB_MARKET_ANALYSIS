@@ -69,7 +69,7 @@ except FileNotFoundError as e:
     st.error(str(e))
     st.stop()
 
-FMT = "â‚¹{:,.0f}"
+FMT = "INR‚¹{:,.0f}"
 
 
 def fmt_money(v):
@@ -98,7 +98,7 @@ page = st.sidebar.radio("Navigate", PAGES, label_visibility="collapsed")
 st.sidebar.markdown("---")
 st.sidebar.markdown("### Filters")
 
-if st.sidebar.button("â†º Reset Filters", use_container_width=True):
+if st.sidebar.button("INR†º Reset Filters", use_container_width=True):
     for k in list(st.session_state.keys()):
         if k.startswith("filt_"):
             del st.session_state[k]
@@ -124,7 +124,7 @@ else:
     sel_salary = None
 
 st.sidebar.caption(
-    "Note: there is no absolute posting date in the source data â€” see the "
+    "Note: there is no absolute posting date in the source data INR€” see the "
     "Emerging Skill Trends page for why a date-range filter isn't offered."
 )
 
@@ -161,18 +161,18 @@ if jobs_df.empty:
 def footer():
     st.markdown(
         '<div class="footer-note">Large-Scale Job Market Intelligence and Emerging Skill Demand '
-        'Analysis â€” processed with <b>HDFS</b>, <b>Apache Pig</b>, and <b>Apache Hive</b> for '
+        'Analysis INR€” processed with <b>HDFS</b>, <b>Apache Pig</b>, and <b>Apache Hive</b> for '
         'large-scale big-data transformations; this dashboard is the presentation layer.</div>',
         unsafe_allow_html=True,
     )
 
 
 # ---------------------------------------------------------------------------
-# PAGE 1 â€” Executive Overview
+# PAGE 1 INR€” Executive Overview
 # ---------------------------------------------------------------------------
 if page == "Executive Overview":
     st.title("Executive Overview")
-    st.caption("Large-Scale Job Market Intelligence and Emerging Skill Demand Analysis â€” Indian job market, ~97.9K postings.")
+    st.caption("Large-Scale Job Market Intelligence and Emerging Skill Demand Analysis INR€” Indian job market, ~97.9K postings.")
     st.markdown(f'<span class="source-tag">Source: {source_note}</span>', unsafe_allow_html=True)
 
     k = an.kpis(jobs_df)
@@ -189,7 +189,7 @@ if page == "Executive Overview":
     c5, c6, c7, c8 = st.columns(4)
     c5.metric("Avg Salary (INR, disclosed)", fmt_money(k["avg_salary"]))
     c6.metric("Median Salary (INR, disclosed)", fmt_money(k["median_salary"]))
-    c7.metric("Top Job Role", k["top_role"][:28] + ("â€¦" if len(k["top_role"]) > 28 else ""))
+    c7.metric("Top Job Role", k["top_role"][:28] + ("..." if len(k["top_role"]) > 28 else ""))
     c8.metric("Top Skill", top_skill)
 
     st.caption(
@@ -237,7 +237,7 @@ if page == "Executive Overview":
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 2 â€” Skill Demand Intelligence
+# PAGE 2 INR€” Skill Demand Intelligence
 # ---------------------------------------------------------------------------
 elif page == "Skill Demand Intelligence":
     st.title("Skill Demand Intelligence")
@@ -287,7 +287,7 @@ elif page == "Skill Demand Intelligence":
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 3 â€” Salary Analytics
+# PAGE 3 INR€” Salary Analytics
 # ---------------------------------------------------------------------------
 elif page == "Salary Analytics":
     st.title("Salary Analytics")
@@ -351,14 +351,14 @@ elif page == "Salary Analytics":
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 4 â€” Location & Hiring Analytics
+# PAGE 4 INR€” Location & Hiring Analytics
 # ---------------------------------------------------------------------------
 elif page == "Location & Hiring":
     st.title("Location & Hiring Analytics")
     st.markdown(f'<span class="source-tag">Source: {source_note}</span>', unsafe_allow_html=True)
     st.caption(
         "`location` is the primary city extracted from the original multi-location text "
-        "(e.g. 'Kolkata(Chinar Park)' â†’ 'Kolkata'); different cities are never merged."
+        "(e.g. 'Kolkata(Chinar Park)' INR†’ 'Kolkata'); different cities are never merged."
     )
 
     top_locs = an.postings_by_location(jobs_df, 20)
@@ -390,7 +390,7 @@ elif page == "Location & Hiring":
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 5 â€” Experience & Job Role Analytics
+# PAGE 5 INR€” Experience & Job Role Analytics
 # ---------------------------------------------------------------------------
 elif page == "Experience & Job Roles":
     st.title("Experience & Job Role Analytics")
@@ -425,12 +425,12 @@ elif page == "Experience & Job Roles":
             if top.empty:
                 st.caption(f"No {label} postings with skill data in this filter.")
     else:
-                st.plotly_chart(ch.horizontal_bar(top, "postings", "skill", f"Top Skills â€” {label}"),
+                st.plotly_chart(ch.horizontal_bar(top, "postings", "skill", f"Top Skills INR€” {label}"),
                                  use_container_width=True)
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 6 â€” Emerging Skill Trends
+# PAGE 6 INR€” Emerging Skill Trends
 # ---------------------------------------------------------------------------
 elif page == "Emerging Skill Trends":
     st.title("Emerging Skill Trends")
@@ -442,7 +442,7 @@ elif page == "Emerging Skill Trends":
         "absolute posting date**. A true year-over-year emerging-skill trend (e.g. 2024 vs 2025 "
         "vs 2026) is **not derivable from this dataset** without fabricating dates. "
         "This page therefore shows (a) the dataset's actual recency coverage, and "
-        "(b) overall skill demand â€” which reflects total popularity, **not growth** â€” "
+        "(b) overall skill demand INR€” which reflects total popularity, **not growth** INR€” "
         "rather than inventing a historical trend line.",
         icon="⚠️",
     )
@@ -455,7 +455,7 @@ elif page == "Emerging Skill Trends":
 
     st.markdown("### Highest Total Demand (Not Growth)")
     st.caption(
-        "These are the most-demanded skills overall â€” ranked by total posting count, "
+        "These are the most-demanded skills overall INR€” ranked by total posting count, "
         "the same metric as the Executive Overview and Skill Demand pages. Labeling any of "
         "these 'emerging' would not be supported by the data, since growth requires comparable "
         "counts across multiple real time periods, which this dataset does not have."
@@ -505,7 +505,7 @@ elif page == "Emerging Skill Trends":
     footer()
 
 # ---------------------------------------------------------------------------
-# PAGE 7 â€” Data Explorer
+# PAGE 7 INR€” Data Explorer
 # ---------------------------------------------------------------------------
 elif page == "Data Explorer":
     st.title("Data Explorer")
@@ -529,12 +529,13 @@ elif page == "Data Explorer":
     st.dataframe(view_df, use_container_width=True, height=500)
 
     st.download_button(
-        "â¬‡ Download filtered results as CSV",
+        "INR¬‡ Download filtered results as CSV",
         data=view_df.to_csv(index=False).encode("utf-8"),
         file_name="job_postings_filtered.csv",
         mime="text/csv",
     )
     footer()
+
 
 
 
