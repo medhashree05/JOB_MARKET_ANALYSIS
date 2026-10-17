@@ -1,0 +1,100 @@
+Go
+Agile
+SQL
+Python
+AWS
+Azure
+Java
+Oracle
+JavaScript
+DevOps
+Linux
+Machine Learning
+HTML
+Jira
+React
+Scrum
+Data Science
+CI/CD
+Tableau
+Git
+Kubernetes
+Docker
+CSS
+GCP
+ETL
+Spark
+Jenkins
+Microservices
+Data Modeling
+Angular
+Terraform
+Kafka
+TypeScript
+MySQL
+Snowflake
+Data Engineering
+Node.js
+Bash
+Ansible
+SOAP
+PowerBI
+Scala
+Data Warehouse
+PHP
+PostgreSQL
+Spring Boot
+Hadoop
+Databricks
+MongoDB
+Computer Vision
+Ruby
+Flash
+Deep Learning
+Perl
+PyTorch
+REST API
+Helm
+TensorFlow
+NLP
+Redshift
+Redis
+dbt
+Airflow
+GraphQL
+Hive
+PySpark
+Vue
+Rust
+C++
+Cassandra
+Grafana
+Django
+Pandas
+Scikit-Learn
+COBOL
+Elasticsearch
+NumPy
+Prometheus
+SVN
+BigQuery
+Visual Basic
+Flask
+AngularJS
+Ant
+RabbitMQ
+C#
+Next.js
+MapReduce
+JSP
+FastAPI
+Pig
+LangChain
+Struts
+Pinecone
+ArgoCD
+LlamaIndex
+TailwindCSS
+Milvus
+Polars
+vLLM

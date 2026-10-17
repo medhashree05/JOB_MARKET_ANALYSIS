@@ -1,0 +1,5725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill Demand Velocity Index (SDVI) — Job Market Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-main: #07090e;
+      --bg-card: rgba(16, 23, 38, 0.75);
+      --bg-card-hover: rgba(22, 33, 56, 0.85);
+      --border-card: rgba(56, 189, 248, 0.15);
+      --border-glow: rgba(0, 245, 212, 0.35);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --emerging: #00f5d4;
+      --emerging-glow: rgba(0, 245, 212, 0.4);
+      --established: #10b981;
+      --established-glow: rgba(16, 185, 129, 0.4);
+      --stable: #f59e0b;
+      --stable-glow: rgba(245, 158, 11, 0.4);
+      --declining: #f43f5e;
+      --declining-glow: rgba(244, 63, 94, 0.4);
+      --accent: #38bdf8;
+      --accent-purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #111a2e 0%, #07090e 65%, #030407 100%);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: 50px;
+    }
+
+    /* Cyber grid overlay */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: 
+        linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 20px;
+      position: relative;
+    }
+
+    .header-title h1 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #ffffff 30%, #38bdf8 70%, #00f5d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 245, 212, 0.12);
+      border: 1px solid var(--border-glow);
+      color: var(--emerging);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+
+    .formula-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #7dd3fc;
+      margin-left: 6px;
+    }
+
+    .controls-panel {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg-card);
+      padding: 10px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      backdrop-filter: blur(12px);
+    }
+
+    .control-label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .month-select {
+      background: #0d1527;
+      border: 1px solid var(--border-glow);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .month-select:focus {
+      box-shadow: 0 0 12px var(--border-glow);
+    }
+
+    /* KPI Cards */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      background: var(--bg-card-hover);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .kpi-card::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+    }
+
+    .kpi-emerging::after { background: var(--emerging); box-shadow: 0 0 12px var(--emerging); }
+    .kpi-established::after { background: var(--established); box-shadow: 0 0 12px var(--established); }
+    .kpi-stable::after { background: var(--stable); box-shadow: 0 0 12px var(--stable); }
+    .kpi-declining::after { background: var(--declining); box-shadow: 0 0 12px var(--declining); }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .kpi-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+
+    .kpi-val {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .kpi-sub {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Main Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-muted);
+    }
+
+    /* Radar Pulse Section */
+    .radar-container {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      background: radial-gradient(circle at center, #0e172a 0%, #060911 80%);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 245, 212, 0.2);
+      overflow: hidden;
+    }
+
+    #radarCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .radar-hud {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--emerging);
+      pointer-events: none;
+      line-height: 1.5;
+      text-shadow: 0 0 8px var(--emerging-glow);
+    }
+
+    .radar-legend {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      display: flex;
+      gap: 12px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(7, 9, 14, 0.85);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-pill {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Leaderboard */
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 440px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .leaderboard-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .leaderboard-list::-webkit-scrollbar-thumb {
+      background: var(--border-card);
+      border-radius: 4px;
+    }
+
+    .leader-item {
+      background: rgba(13, 21, 39, 0.6);
+      border: 1px solid rgba(56, 189, 248, 0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .leader-item:hover {
+      background: rgba(22, 36, 68, 0.8);
+      border-color: var(--emerging);
+      transform: translateX(4px);
+    }
+
+    .leader-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .leader-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .leader-rank {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      width: 22px;
+    }
+
+    .leader-rank.top-1 { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+    .leader-rank.top-2 { color: #94a3b8; }
+    .leader-rank.top-3 { color: #d97706; }
+
+    .leader-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .leader-metrics {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      display: flex;
+      gap: 12px;
+    }
+
+    .leader-sdvi {
+      color: var(--emerging);
+      font-weight: 700;
+    }
+
+    .leader-growth {
+      color: #38bdf8;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #00bbf9, #00f5d4);
+      box-shadow: 0 0 8px var(--emerging-glow);
+      transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Lower Section: Scatter + Trend */
+    .lower-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+    }
+
+    /* Skill Search Box */
+    .search-box-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .skill-input {
+      flex: 1;
+      background: #0d1527;
+      border: 1px solid var(--border-card);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      padding: 10px 14px;
+      border-radius: 8px;
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+    .skill-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+    }
+
+    .search-btn {
+      background: linear-gradient(135deg, #0284c7, #00f5d4);
+      border: none;
+      color: #000;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 0 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+    }
+
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chip:hover, .chip.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* Tooltip styling */
+    #pulseTooltip {
+      position: absolute;
+      display: none;
+      background: rgba(11, 15, 25, 0.95);
+      border: 1px solid var(--emerging);
+      box-shadow: 0 0 16px var(--emerging-glow);
+      padding: 10px 14px;
+      border-radius: 8px;
+      pointer-events: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      z-index: 100;
+      line-height: 1.5;
+    }
+
+    /* Pipeline Status Footer */
+    footer {
+      margin-top: 40px;
+      border-top: 1px solid var(--border-card);
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pipeline-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--emerging);
+      box-shadow: 0 0 8px var(--emerging);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-title">
+        <h1>
+          <span>JOB MARKET INTELLIGENCE</span>
+          <span class="header-badge">LIVE ENGINE</span>
+        </h1>
+        <div class="header-subtitle">
+          Skill Demand Velocity Index (SDVI) Pipeline:
+          <span class="formula-tag">SDVI = growth_rate × ln(1 + mentions)</span>
+        </div>
+      </div>
+
+      <div class="controls-panel">
+        <span class="control-label">Timeline Slice:</span>
+        <select id="monthSelect" class="month-select">
+          <option value="2024-06" selected>2024-06 (June)</option>
+          <option value="2024-05">2024-05 (May)</option>
+          <option value="2024-04">2024-04 (April)</option>
+          <option value="2024-03">2024-03 (March)</option>
+          <option value="2024-02">2024-02 (February)</option>
+          <option value="2024-01">2024-01 (January)</option>
+        </select>
+      </div>
+    </header>
+
+    <!-- KPI Summary Row -->
+    <section class="kpi-row">
+      <div class="kpi-card kpi-emerging">
+        <div class="kpi-label">
+          <span>Emerging Skills</span>
+          <span class="kpi-dot" style="background: var(--emerging)"></span>
+        </div>
+        <div class="kpi-val" id="kpiEmerging">0</div>
+        <div class="kpi-sub" id="kpiEmergingSub">High Velocity / Breakthrough</div>
+      </div>
+
+      <div class="kpi-card kpi-established">
+        <div class="kpi-label">
+          <span>Established Growth</span>
+          <span class="kpi-dot" style="background: var(--established)"></span>
+        </div>
+        <div class="kpi-val" id="kpiEstablished">0</div>
+        <div class="kpi-sub" id="kpiEstablishedSub">High Volume + Positive Trend</div>
+      </div>
+
+      <div class="kpi-card kpi-stable">
+        <div class="kpi-label">
+          <span>Stable Tech Core</span>
+          <span class="kpi-dot" style="background: var(--stable)"></span>
+        </div>
+        <div class="kpi-val" id="kpiStable">0</div>
+        <div class="kpi-sub" id="kpiStableSub">Sustained High Demand</div>
+      </div>
+
+      <div class="kpi-card kpi-declining">
+        <div class="kpi-label">
+          <span>Declining / Legacy</span>
+          <span class="kpi-dot" style="background: var(--declining)"></span>
+        </div>
+        <div class="kpi-val" id="kpiDeclining">0</div>
+        <div class="kpi-sub" id="kpiDecliningSub">Negative Momentum Velocity</div>
+      </div>
+    </section>
+
+    <!-- Top Dashboard Grid: Radar Visual Metaphor + Leaderboard -->
+    <section class="dashboard-grid">
+      <!-- Radar Pulse Metaphor -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⚡ RADAR MOMENTUM PULSE</span>
+            <span class="card-badge">PULSING NODES SIZED BY SDVI</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-dim); font-family: 'JetBrains Mono';">HOVER BLIPS FOR HUD</span>
+        </div>
+
+        <div class="radar-container">
+          <canvas id="radarCanvas"></canvas>
+          <div class="radar-hud">
+            <div>SCAN: ACTIVE // 360°</div>
+            <div id="radarTargetCount">TARGETS: 100 SKILLS</div>
+            <div>STATUS: TRACKING MOMENTUM</div>
+          </div>
+          <div class="radar-legend">
+            <div class="legend-item"><span class="legend-pill" style="background: var(--emerging)"></span>Emerging</div>
+            <div class="legend-item"><span class="legend-pill" style="background: var(--established)"></span>Est. Growth</div>
+            <div class="legend-item"><span class="legend-pill" style="background: var(--stable)"></span>Stable</div>
+            <div class="legend-item"><span class="legend-pill" style="background: var(--declining)"></span>Declining</div>
+          </div>
+          <div id="pulseTooltip"></div>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🚀 TOP VELOCITY LEADERBOARD</span>
+            <span class="card-badge" id="leaderboardMonthBadge">2024-06</span>
+          </div>
+        </div>
+        <div class="leaderboard-list" id="leaderboardList">
+          <!-- Dynamic Leaderboard Items -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Lower Grid: Quadrant Scatter Plot + Skill Trend Analyzer -->
+    <section class="lower-grid">
+      <!-- Quadrant Scatter Plot -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📊 SDVI QUADRANT MATRIX</span>
+            <span class="card-badge">LOG MENTIONS VS SDVI</span>
+          </div>
+        </div>
+        <div style="height: 380px; position: relative;">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Skill Search & Multi-Month Trend -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>📈 MULTI-MONTH TREND ANALYZER</span>
+            <span class="card-badge" id="selectedSkillBadge">Hadoop</span>
+          </div>
+        </div>
+
+        <div class="search-box-row">
+          <input type="text" id="skillSearchInput" class="skill-input" placeholder="Search skill (e.g. Python, Docker, AWS, Spark, Kubernetes)..." />
+          <button id="searchBtn" class="search-btn">ANALYZE</button>
+        </div>
+
+        <div class="quick-chips" id="quickChips">
+          <span class="chip active" data-skill="Hadoop">Hadoop</span>
+          <span class="chip" data-skill="Python">Python</span>
+          <span class="chip" data-skill="Docker">Docker</span>
+          <span class="chip" data-skill="AWS">AWS</span>
+          <span class="chip" data-skill="Spark">Spark</span>
+          <span class="chip" data-skill="React">React</span>
+          <span class="chip" data-skill="Kubernetes">Kubernetes</span>
+          <span class="chip" data-skill="Snowflake">Snowflake</span>
+        </div>
+
+        <div style="height: 300px; position: relative;">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Status Footer -->
+    <footer>
+      <div class="pipeline-status">
+        <span class="live-dot"></span>
+        <span>HDFS ➔ Pig Latin ➔ Hive Data Warehouse ➔ HiveQL Window SDVI ➔ JSON Export</span>
+      </div>
+      <div>BIG DATA ANALYTICS // VERIFIED END-TO-END</div>
+    </footer>
+  </div>
+
+  <script>
+    // Embedded Data Payload from Hive SDVI Pipeline (new dataset)
+    const RAW_SDVI_DATA = [
+  {
+    "skill": "LangChain",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-01",
+    "mentions": 280,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-01",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-01",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-01",
+    "mentions": 8,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-01",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-01",
+    "mentions": 38,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-01",
+    "mentions": 4,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-01",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-01",
+    "mentions": 32,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-01",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-01",
+    "mentions": 35,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-01",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ArgoCD",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-01",
+    "mentions": 176,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-01",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-01",
+    "mentions": 37,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-01",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-01",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-01",
+    "mentions": 10,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-01",
+    "mentions": 31,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-01",
+    "mentions": 73,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-01",
+    "mentions": 26,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-01",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-01",
+    "mentions": 61,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Pinecone",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-01",
+    "mentions": 48,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-01",
+    "mentions": 6,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Pig",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-01",
+    "mentions": 18,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-01",
+    "mentions": 22,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "React",
+    "month": "2024-01",
+    "mentions": 82,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-01",
+    "mentions": 11,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-01",
+    "mentions": 29,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-01",
+    "mentions": 6,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-01",
+    "mentions": 39,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-01",
+    "mentions": 77,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-01",
+    "mentions": 19,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-01",
+    "mentions": 24,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-01",
+    "mentions": 138,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-01",
+    "mentions": 17,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-01",
+    "mentions": 73,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-01",
+    "mentions": 13,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-01",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-01",
+    "mentions": 107,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Struts",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-01",
+    "mentions": 4,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-01",
+    "mentions": 31,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-01",
+    "mentions": 68,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-01",
+    "mentions": 50,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-01",
+    "mentions": 8,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-01",
+    "mentions": 20,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-01",
+    "mentions": 23,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-01",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-01",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-01",
+    "mentions": 14,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-01",
+    "mentions": 44,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-01",
+    "mentions": 71,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-01",
+    "mentions": 66,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-01",
+    "mentions": 33,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-01",
+    "mentions": 370,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-01",
+    "mentions": 541,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-01",
+    "mentions": 10,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-01",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-01",
+    "mentions": 41,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-01",
+    "mentions": 84,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-01",
+    "mentions": 13,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-01",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-01",
+    "mentions": 20,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-01",
+    "mentions": 102,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-01",
+    "mentions": 13,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-01",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-01",
+    "mentions": 18,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-01",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Milvus",
+    "month": "2024-01",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-01",
+    "mentions": 21,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-01",
+    "mentions": 25,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-01",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-01",
+    "mentions": 161,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-01",
+    "mentions": 39,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-01",
+    "mentions": 92,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MapReduce",
+    "month": "2024-01",
+    "mentions": 4,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-01",
+    "mentions": 6,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-01",
+    "mentions": 46,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-01",
+    "mentions": 89,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-01",
+    "mentions": 106,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-01",
+    "mentions": 12,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "LlamaIndex",
+    "month": "2024-01",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-01",
+    "mentions": 284,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-01",
+    "mentions": 31,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-01",
+    "mentions": 105,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-01",
+    "mentions": 75,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-01",
+    "mentions": 215,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-02",
+    "mentions": 9,
+    "growth_rate": 3.5,
+    "sdvi": 8.059,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-02",
+    "mentions": 5,
+    "growth_rate": 4.0,
+    "sdvi": 7.167,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-02",
+    "mentions": 9,
+    "growth_rate": 2.0,
+    "sdvi": 4.6052,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-02",
+    "mentions": 22,
+    "growth_rate": 1.4444,
+    "sdvi": 4.5289,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 1.5,
+    "sdvi": 3.5968,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-02",
+    "mentions": 26,
+    "growth_rate": 1.0,
+    "sdvi": 3.2958,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-02",
+    "mentions": 17,
+    "growth_rate": 0.8889,
+    "sdvi": 2.5693,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 1.0,
+    "sdvi": 2.3979,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-02",
+    "mentions": 36,
+    "growth_rate": 0.5652,
+    "sdvi": 2.0409,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-02",
+    "mentions": 12,
+    "growth_rate": 0.7143,
+    "sdvi": 1.8321,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "LangChain",
+    "month": "2024-02",
+    "mentions": 4,
+    "growth_rate": 1.0,
+    "sdvi": 1.6094,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-02",
+    "mentions": 44,
+    "growth_rate": 0.4194,
+    "sdvi": 1.5965,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-02",
+    "mentions": 7,
+    "growth_rate": 0.75,
+    "sdvi": 1.5596,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-02",
+    "mentions": 28,
+    "growth_rate": 0.4,
+    "sdvi": 1.3469,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-02",
+    "mentions": 39,
+    "growth_rate": 0.3448,
+    "sdvi": 1.2719,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-02",
+    "mentions": 13,
+    "growth_rate": 0.4444,
+    "sdvi": 1.1728,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "LlamaIndex",
+    "month": "2024-02",
+    "mentions": 2,
+    "growth_rate": 1.0,
+    "sdvi": 1.0986,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-02",
+    "mentions": 109,
+    "growth_rate": 0.2247,
+    "sdvi": 1.0562,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-02",
+    "mentions": 81,
+    "growth_rate": 0.2273,
+    "sdvi": 1.0016,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-02",
+    "mentions": 48,
+    "growth_rate": 0.2308,
+    "sdvi": 0.8982,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-02",
+    "mentions": 17,
+    "growth_rate": 0.3077,
+    "sdvi": 0.8894,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-02",
+    "mentions": 23,
+    "growth_rate": 0.2778,
+    "sdvi": 0.8829,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-02",
+    "mentions": 12,
+    "growth_rate": 0.3333,
+    "sdvi": 0.8549,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-02",
+    "mentions": 7,
+    "growth_rate": 0.4,
+    "sdvi": 0.8318,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-02",
+    "mentions": 8,
+    "growth_rate": 0.3333,
+    "sdvi": 0.7323,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-02",
+    "mentions": 8,
+    "growth_rate": 0.3333,
+    "sdvi": 0.7323,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-02",
+    "mentions": 97,
+    "growth_rate": 0.1548,
+    "sdvi": 0.7098,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-02",
+    "mentions": 3,
+    "growth_rate": 0.5,
+    "sdvi": 0.6931,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-02",
+    "mentions": 9,
+    "growth_rate": 0.2857,
+    "sdvi": 0.6578,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-02",
+    "mentions": 9,
+    "growth_rate": 0.2857,
+    "sdvi": 0.6578,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-02",
+    "mentions": 83,
+    "growth_rate": 0.137,
+    "sdvi": 0.607,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-02",
+    "mentions": 104,
+    "growth_rate": 0.1304,
+    "sdvi": 0.6069,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 0.25,
+    "sdvi": 0.5995,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 0.25,
+    "sdvi": 0.5995,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-02",
+    "mentions": 28,
+    "growth_rate": 0.1667,
+    "sdvi": 0.5613,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-02",
+    "mentions": 29,
+    "growth_rate": 0.16,
+    "sdvi": 0.5442,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-02",
+    "mentions": 50,
+    "growth_rate": 0.1364,
+    "sdvi": 0.5363,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-02",
+    "mentions": 13,
+    "growth_rate": 0.1818,
+    "sdvi": 0.4798,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-02",
+    "mentions": 15,
+    "growth_rate": 0.1538,
+    "sdvi": 0.4264,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-02",
+    "mentions": 84,
+    "growth_rate": 0.0909,
+    "sdvi": 0.4038,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-02",
+    "mentions": 34,
+    "growth_rate": 0.0968,
+    "sdvi": 0.3442,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-02",
+    "mentions": 113,
+    "growth_rate": 0.066,
+    "sdvi": 0.3126,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-02",
+    "mentions": 41,
+    "growth_rate": 0.0789,
+    "sdvi": 0.2949,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-02",
+    "mentions": 170,
+    "growth_rate": 0.0559,
+    "sdvi": 0.2874,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-02",
+    "mentions": 111,
+    "growth_rate": 0.0571,
+    "sdvi": 0.2694,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-02",
+    "mentions": 53,
+    "growth_rate": 0.06,
+    "sdvi": 0.2393,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-02",
+    "mentions": 64,
+    "growth_rate": 0.0492,
+    "sdvi": 0.2054,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-02",
+    "mentions": 293,
+    "growth_rate": 0.0317,
+    "sdvi": 0.1802,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-02",
+    "mentions": 381,
+    "growth_rate": 0.0297,
+    "sdvi": 0.1766,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-02",
+    "mentions": 48,
+    "growth_rate": 0.0435,
+    "sdvi": 0.1693,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "React",
+    "month": "2024-02",
+    "mentions": 85,
+    "growth_rate": 0.0366,
+    "sdvi": 0.163,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-02",
+    "mentions": 551,
+    "growth_rate": 0.0185,
+    "sdvi": 0.1168,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Polars",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "vLLM",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-02",
+    "mentions": 14,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "FastAPI",
+    "month": "2024-02",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-02",
+    "mentions": 10,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-02",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-02",
+    "mentions": 176,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-02",
+    "mentions": 32,
+    "growth_rate": -0.0303,
+    "sdvi": -0.1059,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-02",
+    "mentions": 66,
+    "growth_rate": -0.0294,
+    "sdvi": -0.1236,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-02",
+    "mentions": 19,
+    "growth_rate": -0.05,
+    "sdvi": -0.1498,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-02",
+    "mentions": 16,
+    "growth_rate": -0.0588,
+    "sdvi": -0.1666,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-02",
+    "mentions": 69,
+    "growth_rate": -0.0548,
+    "sdvi": -0.2328,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-02",
+    "mentions": 130,
+    "growth_rate": -0.058,
+    "sdvi": -0.2828,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-02",
+    "mentions": 34,
+    "growth_rate": -0.0811,
+    "sdvi": -0.2883,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-02",
+    "mentions": 203,
+    "growth_rate": -0.0558,
+    "sdvi": -0.2968,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-02",
+    "mentions": 5,
+    "growth_rate": -0.1667,
+    "sdvi": -0.2987,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-02",
+    "mentions": 95,
+    "growth_rate": -0.0686,
+    "sdvi": -0.3131,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-02",
+    "mentions": 4,
+    "growth_rate": -0.2,
+    "sdvi": -0.3219,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "MapReduce",
+    "month": "2024-02",
+    "mentions": 3,
+    "growth_rate": -0.25,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Pig",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Pinecone",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-02",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-02",
+    "mentions": 98,
+    "growth_rate": -0.0841,
+    "sdvi": -0.3864,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-02",
+    "mentions": 68,
+    "growth_rate": -0.0933,
+    "sdvi": -0.395,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-02",
+    "mentions": 64,
+    "growth_rate": -0.0986,
+    "sdvi": -0.4116,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-02",
+    "mentions": 5,
+    "growth_rate": -0.2857,
+    "sdvi": -0.5119,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-02",
+    "mentions": 33,
+    "growth_rate": -0.1538,
+    "sdvi": -0.5424,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-02",
+    "mentions": 252,
+    "growth_rate": -0.1,
+    "sdvi": -0.5533,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-02",
+    "mentions": 3,
+    "growth_rate": -0.4,
+    "sdvi": -0.5545,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-02",
+    "mentions": 26,
+    "growth_rate": -0.1875,
+    "sdvi": -0.618,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-02",
+    "mentions": 25,
+    "growth_rate": -0.1935,
+    "sdvi": -0.6304,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-02",
+    "mentions": 6,
+    "growth_rate": -0.3333,
+    "sdvi": -0.6486,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-02",
+    "mentions": 4,
+    "growth_rate": -0.4286,
+    "sdvi": -0.6898,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-02",
+    "mentions": 8,
+    "growth_rate": -0.3333,
+    "sdvi": -0.7323,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-02",
+    "mentions": 19,
+    "growth_rate": -0.2692,
+    "sdvi": -0.8065,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-02",
+    "mentions": 15,
+    "growth_rate": -0.3182,
+    "sdvi": -0.8822,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-02",
+    "mentions": 12,
+    "growth_rate": -0.3684,
+    "sdvi": -0.9449,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-02",
+    "mentions": 13,
+    "growth_rate": -0.381,
+    "sdvi": -1.0055,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-02",
+    "mentions": 24,
+    "growth_rate": -0.3143,
+    "sdvi": -1.0117,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-02",
+    "mentions": 28,
+    "growth_rate": -0.3171,
+    "sdvi": -1.0678,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-02",
+    "mentions": 9,
+    "growth_rate": -0.5,
+    "sdvi": -1.1513,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-02",
+    "mentions": 23,
+    "growth_rate": -0.5208,
+    "sdvi": -1.6551,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-03",
+    "mentions": 4,
+    "growth_rate": 3.0,
+    "sdvi": 4.8283,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Pig",
+    "month": "2024-03",
+    "mentions": 4,
+    "growth_rate": 3.0,
+    "sdvi": 4.8283,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-03",
+    "mentions": 23,
+    "growth_rate": 0.9167,
+    "sdvi": 2.9133,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-03",
+    "mentions": 3,
+    "growth_rate": 2.0,
+    "sdvi": 2.7726,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-03",
+    "mentions": 36,
+    "growth_rate": 0.5652,
+    "sdvi": 2.0409,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": 1.0,
+    "sdvi": 1.9459,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-03",
+    "mentions": 15,
+    "growth_rate": 0.6667,
+    "sdvi": 1.8485,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "FastAPI",
+    "month": "2024-03",
+    "mentions": 4,
+    "growth_rate": 1.0,
+    "sdvi": 1.6094,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-03",
+    "mentions": 28,
+    "growth_rate": 0.4737,
+    "sdvi": 1.5951,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": 0.75,
+    "sdvi": 1.5596,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-03",
+    "mentions": 15,
+    "growth_rate": 0.5,
+    "sdvi": 1.3863,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-03",
+    "mentions": 8,
+    "growth_rate": 0.6,
+    "sdvi": 1.3183,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-03",
+    "mentions": 14,
+    "growth_rate": 0.4,
+    "sdvi": 1.0832,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": 0.5,
+    "sdvi": 0.973,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-03",
+    "mentions": 59,
+    "growth_rate": 0.18,
+    "sdvi": 0.737,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-03",
+    "mentions": 8,
+    "growth_rate": 0.3333,
+    "sdvi": 0.7323,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-03",
+    "mentions": 10,
+    "growth_rate": 0.25,
+    "sdvi": 0.5995,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-03",
+    "mentions": 19,
+    "growth_rate": 0.1875,
+    "sdvi": 0.5617,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-03",
+    "mentions": 106,
+    "growth_rate": 0.1158,
+    "sdvi": 0.5411,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-03",
+    "mentions": 70,
+    "growth_rate": 0.0938,
+    "sdvi": 0.3998,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": 0.2,
+    "sdvi": 0.3892,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-03",
+    "mentions": 21,
+    "growth_rate": 0.1053,
+    "sdvi": 0.3255,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-03",
+    "mentions": 10,
+    "growth_rate": 0.1111,
+    "sdvi": 0.2664,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-03",
+    "mentions": 35,
+    "growth_rate": 0.0606,
+    "sdvi": 0.2172,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-03",
+    "mentions": 14,
+    "growth_rate": 0.0769,
+    "sdvi": 0.2082,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-03",
+    "mentions": 102,
+    "growth_rate": 0.0408,
+    "sdvi": 0.1891,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-03",
+    "mentions": 23,
+    "growth_rate": 0.0455,
+    "sdvi": 0.1446,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-03",
+    "mentions": 71,
+    "growth_rate": 0.029,
+    "sdvi": 0.124,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "React",
+    "month": "2024-03",
+    "mentions": 87,
+    "growth_rate": 0.0235,
+    "sdvi": 0.1052,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-03",
+    "mentions": 106,
+    "growth_rate": 0.0192,
+    "sdvi": 0.0897,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-03",
+    "mentions": 54,
+    "growth_rate": 0.0189,
+    "sdvi": 0.0757,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-03",
+    "mentions": 385,
+    "growth_rate": 0.0105,
+    "sdvi": 0.0625,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TailwindCSS",
+    "month": "2024-03",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Struts",
+    "month": "2024-03",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-03",
+    "mentions": 17,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-03",
+    "mentions": 26,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-03",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-03",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-03",
+    "mentions": 25,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-03",
+    "mentions": 29,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MapReduce",
+    "month": "2024-03",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-03",
+    "mentions": 546,
+    "growth_rate": -0.0091,
+    "sdvi": -0.0574,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-03",
+    "mentions": 289,
+    "growth_rate": -0.0137,
+    "sdvi": -0.0777,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-03",
+    "mentions": 47,
+    "growth_rate": -0.0208,
+    "sdvi": -0.0805,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-03",
+    "mentions": 248,
+    "growth_rate": -0.0159,
+    "sdvi": -0.0877,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-03",
+    "mentions": 81,
+    "growth_rate": -0.0241,
+    "sdvi": -0.1062,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-03",
+    "mentions": 25,
+    "growth_rate": -0.0385,
+    "sdvi": -0.1254,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-03",
+    "mentions": 81,
+    "growth_rate": -0.0357,
+    "sdvi": -0.1573,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-03",
+    "mentions": 14,
+    "growth_rate": -0.0667,
+    "sdvi": -0.1806,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-03",
+    "mentions": 12,
+    "growth_rate": -0.0769,
+    "sdvi": -0.1972,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-03",
+    "mentions": 30,
+    "growth_rate": -0.0625,
+    "sdvi": -0.2146,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-03",
+    "mentions": 9,
+    "growth_rate": -0.1,
+    "sdvi": -0.2303,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-03",
+    "mentions": 26,
+    "growth_rate": -0.0714,
+    "sdvi": -0.2353,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-03",
+    "mentions": 107,
+    "growth_rate": -0.0531,
+    "sdvi": -0.2486,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": -0.125,
+    "sdvi": -0.2599,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": -0.125,
+    "sdvi": -0.2599,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-03",
+    "mentions": 22,
+    "growth_rate": -0.0833,
+    "sdvi": -0.2612,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-03",
+    "mentions": 38,
+    "growth_rate": -0.0732,
+    "sdvi": -0.2682,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-03",
+    "mentions": 91,
+    "growth_rate": -0.0619,
+    "sdvi": -0.2799,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-03",
+    "mentions": 122,
+    "growth_rate": -0.0615,
+    "sdvi": -0.2959,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-03",
+    "mentions": 63,
+    "growth_rate": -0.0735,
+    "sdvi": -0.3057,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-03",
+    "mentions": 61,
+    "growth_rate": -0.0758,
+    "sdvi": -0.3128,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-03",
+    "mentions": 15,
+    "growth_rate": -0.1176,
+    "sdvi": -0.3261,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-03",
+    "mentions": 190,
+    "growth_rate": -0.064,
+    "sdvi": -0.3361,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ArgoCD",
+    "month": "2024-03",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-03",
+    "mentions": 2,
+    "growth_rate": -0.3333,
+    "sdvi": -0.3662,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-03",
+    "mentions": 74,
+    "growth_rate": -0.0864,
+    "sdvi": -0.373,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-03",
+    "mentions": 30,
+    "growth_rate": -0.1176,
+    "sdvi": -0.4038,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-03",
+    "mentions": 57,
+    "growth_rate": -0.1094,
+    "sdvi": -0.4442,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-03",
+    "mentions": 155,
+    "growth_rate": -0.0882,
+    "sdvi": -0.4454,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-03",
+    "mentions": 38,
+    "growth_rate": -0.1364,
+    "sdvi": -0.4997,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-03",
+    "mentions": 12,
+    "growth_rate": -0.2,
+    "sdvi": -0.513,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-03",
+    "mentions": 98,
+    "growth_rate": -0.1171,
+    "sdvi": -0.5381,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-03",
+    "mentions": 23,
+    "growth_rate": -0.1786,
+    "sdvi": -0.5676,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-03",
+    "mentions": 9,
+    "growth_rate": -0.25,
+    "sdvi": -0.5756,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": -0.3,
+    "sdvi": -0.6238,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": -0.3333,
+    "sdvi": -0.6486,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-03",
+    "mentions": 4,
+    "growth_rate": -0.4286,
+    "sdvi": -0.6898,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-03",
+    "mentions": 92,
+    "growth_rate": -0.156,
+    "sdvi": -0.7071,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": -0.4,
+    "sdvi": -0.7784,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-03",
+    "mentions": 5,
+    "growth_rate": -0.4444,
+    "sdvi": -0.7963,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-03",
+    "mentions": 147,
+    "growth_rate": -0.1648,
+    "sdvi": -0.8235,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-03",
+    "mentions": 27,
+    "growth_rate": -0.25,
+    "sdvi": -0.8331,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-03",
+    "mentions": 16,
+    "growth_rate": -0.3043,
+    "sdvi": -0.8621,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-03",
+    "mentions": 20,
+    "growth_rate": -0.2857,
+    "sdvi": -0.8698,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-03",
+    "mentions": 4,
+    "growth_rate": -0.5556,
+    "sdvi": -0.8942,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-03",
+    "mentions": 5,
+    "growth_rate": -0.5,
+    "sdvi": -0.8959,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-03",
+    "mentions": 36,
+    "growth_rate": -0.25,
+    "sdvi": -0.9027,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-03",
+    "mentions": 7,
+    "growth_rate": -0.5,
+    "sdvi": -1.0397,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-03",
+    "mentions": 5,
+    "growth_rate": -0.5833,
+    "sdvi": -1.0451,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-03",
+    "mentions": 6,
+    "growth_rate": -0.5385,
+    "sdvi": -1.0479,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-03",
+    "mentions": 25,
+    "growth_rate": -0.359,
+    "sdvi": -1.1697,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-03",
+    "mentions": 21,
+    "growth_rate": -0.3824,
+    "sdvi": -1.182,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-04",
+    "mentions": 22,
+    "growth_rate": 2.6667,
+    "sdvi": 8.3614,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-04",
+    "mentions": 9,
+    "growth_rate": 1.25,
+    "sdvi": 2.8782,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-04",
+    "mentions": 10,
+    "growth_rate": 1.0,
+    "sdvi": 2.3979,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-04",
+    "mentions": 13,
+    "growth_rate": 0.8571,
+    "sdvi": 2.2619,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-04",
+    "mentions": 56,
+    "growth_rate": 0.5556,
+    "sdvi": 2.2463,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-04",
+    "mentions": 8,
+    "growth_rate": 1.0,
+    "sdvi": 2.1972,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-04",
+    "mentions": 11,
+    "growth_rate": 0.8333,
+    "sdvi": 2.0707,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-04",
+    "mentions": 36,
+    "growth_rate": 0.5652,
+    "sdvi": 2.0409,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-04",
+    "mentions": 33,
+    "growth_rate": 0.5,
+    "sdvi": 1.7632,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-04",
+    "mentions": 34,
+    "growth_rate": 0.4783,
+    "sdvi": 1.7005,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-04",
+    "mentions": 7,
+    "growth_rate": 0.75,
+    "sdvi": 1.5596,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-04",
+    "mentions": 29,
+    "growth_rate": 0.45,
+    "sdvi": 1.5305,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-04",
+    "mentions": 18,
+    "growth_rate": 0.5,
+    "sdvi": 1.4722,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-04",
+    "mentions": 35,
+    "growth_rate": 0.4,
+    "sdvi": 1.4334,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-04",
+    "mentions": 41,
+    "growth_rate": 0.3667,
+    "sdvi": 1.3706,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-04",
+    "mentions": 8,
+    "growth_rate": 0.6,
+    "sdvi": 1.3183,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-04",
+    "mentions": 34,
+    "growth_rate": 0.36,
+    "sdvi": 1.2799,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-04",
+    "mentions": 150,
+    "growth_rate": 0.2295,
+    "sdvi": 1.1515,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-04",
+    "mentions": 19,
+    "growth_rate": 0.3571,
+    "sdvi": 1.0698,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-04",
+    "mentions": 21,
+    "growth_rate": 0.3125,
+    "sdvi": 0.966,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-04",
+    "mentions": 86,
+    "growth_rate": 0.2113,
+    "sdvi": 0.9436,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-04",
+    "mentions": 178,
+    "growth_rate": 0.1484,
+    "sdvi": 0.7698,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-04",
+    "mentions": 15,
+    "growth_rate": 0.25,
+    "sdvi": 0.6931,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-04",
+    "mentions": 32,
+    "growth_rate": 0.1852,
+    "sdvi": 0.6476,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-04",
+    "mentions": 17,
+    "growth_rate": 0.2143,
+    "sdvi": 0.6194,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-04",
+    "mentions": 119,
+    "growth_rate": 0.1226,
+    "sdvi": 0.5869,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-04",
+    "mentions": 163,
+    "growth_rate": 0.1088,
+    "sdvi": 0.5549,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-04",
+    "mentions": 11,
+    "growth_rate": 0.2222,
+    "sdvi": 0.5521,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-04",
+    "mentions": 68,
+    "growth_rate": 0.1148,
+    "sdvi": 0.4861,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-04",
+    "mentions": 24,
+    "growth_rate": 0.1429,
+    "sdvi": 0.46,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-04",
+    "mentions": 16,
+    "growth_rate": 0.1429,
+    "sdvi": 0.4049,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-04",
+    "mentions": 19,
+    "growth_rate": 0.1176,
+    "sdvi": 0.3523,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-04",
+    "mentions": 7,
+    "growth_rate": 0.1667,
+    "sdvi": 0.3466,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-04",
+    "mentions": 68,
+    "growth_rate": 0.0794,
+    "sdvi": 0.3362,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-04",
+    "mentions": 38,
+    "growth_rate": 0.0857,
+    "sdvi": 0.314,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-04",
+    "mentions": 8,
+    "growth_rate": 0.1429,
+    "sdvi": 0.314,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-04",
+    "mentions": 39,
+    "growth_rate": 0.0833,
+    "sdvi": 0.3073,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-04",
+    "mentions": 28,
+    "growth_rate": 0.0769,
+    "sdvi": 0.2589,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-04",
+    "mentions": 11,
+    "growth_rate": 0.1,
+    "sdvi": 0.2485,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-04",
+    "mentions": 84,
+    "growth_rate": 0.037,
+    "sdvi": 0.1644,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-04",
+    "mentions": 59,
+    "growth_rate": 0.0351,
+    "sdvi": 0.1437,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-04",
+    "mentions": 105,
+    "growth_rate": 0.0294,
+    "sdvi": 0.1371,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-04",
+    "mentions": 26,
+    "growth_rate": 0.04,
+    "sdvi": 0.1318,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-04",
+    "mentions": 295,
+    "growth_rate": 0.0208,
+    "sdvi": 0.1184,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-04",
+    "mentions": 251,
+    "growth_rate": 0.0121,
+    "sdvi": 0.0669,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-04",
+    "mentions": 19,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Pinecone",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TailwindCSS",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Milvus",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-04",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-04",
+    "mentions": 3,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-04",
+    "mentions": 7,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Polars",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-04",
+    "mentions": 97,
+    "growth_rate": -0.0102,
+    "sdvi": -0.0468,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-04",
+    "mentions": 187,
+    "growth_rate": -0.0158,
+    "sdvi": -0.0827,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "React",
+    "month": "2024-04",
+    "mentions": 85,
+    "growth_rate": -0.023,
+    "sdvi": -0.1024,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-04",
+    "mentions": 29,
+    "growth_rate": -0.0333,
+    "sdvi": -0.1133,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-04",
+    "mentions": 14,
+    "growth_rate": -0.0667,
+    "sdvi": -0.1806,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-04",
+    "mentions": 14,
+    "growth_rate": -0.0667,
+    "sdvi": -0.1806,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-04",
+    "mentions": 67,
+    "growth_rate": -0.0429,
+    "sdvi": -0.181,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-04",
+    "mentions": 88,
+    "growth_rate": -0.0435,
+    "sdvi": -0.1953,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-04",
+    "mentions": 101,
+    "growth_rate": -0.0472,
+    "sdvi": -0.2183,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-04",
+    "mentions": 9,
+    "growth_rate": -0.1,
+    "sdvi": -0.2303,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-04",
+    "mentions": 44,
+    "growth_rate": -0.0638,
+    "sdvi": -0.2429,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-04",
+    "mentions": 86,
+    "growth_rate": -0.0549,
+    "sdvi": -0.2452,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-04",
+    "mentions": 7,
+    "growth_rate": -0.125,
+    "sdvi": -0.2599,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-04",
+    "mentions": 7,
+    "growth_rate": -0.125,
+    "sdvi": -0.2599,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-04",
+    "mentions": 35,
+    "growth_rate": -0.0789,
+    "sdvi": -0.2827,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-04",
+    "mentions": 5,
+    "growth_rate": -0.1667,
+    "sdvi": -0.2987,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-04",
+    "mentions": 75,
+    "growth_rate": -0.0741,
+    "sdvi": -0.3209,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-04",
+    "mentions": 4,
+    "growth_rate": -0.2,
+    "sdvi": -0.3219,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-04",
+    "mentions": 517,
+    "growth_rate": -0.0531,
+    "sdvi": -0.3319,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Struts",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-04",
+    "mentions": 34,
+    "growth_rate": -0.1053,
+    "sdvi": -0.3744,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-04",
+    "mentions": 25,
+    "growth_rate": -0.1379,
+    "sdvi": -0.4493,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": -0.6667,
+    "sdvi": -0.4621,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "LangChain",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": -0.75,
+    "sdvi": -0.5199,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-04",
+    "mentions": 4,
+    "growth_rate": -0.3333,
+    "sdvi": -0.5364,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "FastAPI",
+    "month": "2024-04",
+    "mentions": 2,
+    "growth_rate": -0.5,
+    "sdvi": -0.5493,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-04",
+    "mentions": 17,
+    "growth_rate": -0.1905,
+    "sdvi": -0.5506,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-04",
+    "mentions": 1,
+    "growth_rate": -0.8,
+    "sdvi": -0.5545,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-04",
+    "mentions": 23,
+    "growth_rate": -0.1786,
+    "sdvi": -0.5676,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-04",
+    "mentions": 92,
+    "growth_rate": -0.1402,
+    "sdvi": -0.6355,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-04",
+    "mentions": 343,
+    "growth_rate": -0.1091,
+    "sdvi": -0.6372,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-04",
+    "mentions": 3,
+    "growth_rate": -0.5,
+    "sdvi": -0.6931,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-04",
+    "mentions": 48,
+    "growth_rate": -0.1864,
+    "sdvi": -0.7254,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-04",
+    "mentions": 2,
+    "growth_rate": -0.7143,
+    "sdvi": -0.7847,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-04",
+    "mentions": 2,
+    "growth_rate": -0.7143,
+    "sdvi": -0.7847,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-04",
+    "mentions": 3,
+    "growth_rate": -0.5714,
+    "sdvi": -0.7921,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-04",
+    "mentions": 59,
+    "growth_rate": -0.2027,
+    "sdvi": -0.8299,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-04",
+    "mentions": 16,
+    "growth_rate": -0.3043,
+    "sdvi": -0.8621,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-04",
+    "mentions": 41,
+    "growth_rate": -0.2407,
+    "sdvi": -0.8997,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-04",
+    "mentions": 17,
+    "growth_rate": -0.3462,
+    "sdvi": -1.0006,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-04",
+    "mentions": 6,
+    "growth_rate": -0.6,
+    "sdvi": -1.1675,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-05",
+    "mentions": 7,
+    "growth_rate": 6.0,
+    "sdvi": 12.4766,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": 4.0,
+    "sdvi": 7.167,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-05",
+    "mentions": 8,
+    "growth_rate": 3.0,
+    "sdvi": 6.5917,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-05",
+    "mentions": 10,
+    "growth_rate": 2.3333,
+    "sdvi": 5.595,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-05",
+    "mentions": 3,
+    "growth_rate": 2.0,
+    "sdvi": 2.7726,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": 1.5,
+    "sdvi": 2.6876,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-05",
+    "mentions": 66,
+    "growth_rate": 0.6098,
+    "sdvi": 2.564,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-05",
+    "mentions": 39,
+    "growth_rate": 0.5,
+    "sdvi": 1.8444,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-05",
+    "mentions": 54,
+    "growth_rate": 0.4211,
+    "sdvi": 1.6875,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-05",
+    "mentions": 10,
+    "growth_rate": 0.6667,
+    "sdvi": 1.5987,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-05",
+    "mentions": 7,
+    "growth_rate": 0.75,
+    "sdvi": 1.5596,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-05",
+    "mentions": 41,
+    "growth_rate": 0.4138,
+    "sdvi": 1.5466,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-05",
+    "mentions": 113,
+    "growth_rate": 0.2841,
+    "sdvi": 1.3456,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-05",
+    "mentions": 23,
+    "growth_rate": 0.3529,
+    "sdvi": 1.1215,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-05",
+    "mentions": 74,
+    "growth_rate": 0.2542,
+    "sdvi": 1.0975,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "React",
+    "month": "2024-05",
+    "mentions": 105,
+    "growth_rate": 0.2353,
+    "sdvi": 1.0973,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-05",
+    "mentions": 10,
+    "growth_rate": 0.4286,
+    "sdvi": 1.0277,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-05",
+    "mentions": 21,
+    "growth_rate": 0.3125,
+    "sdvi": 0.966,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-05",
+    "mentions": 192,
+    "growth_rate": 0.1779,
+    "sdvi": 0.9362,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-05",
+    "mentions": 82,
+    "growth_rate": 0.2059,
+    "sdvi": 0.9098,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-05",
+    "mentions": 218,
+    "growth_rate": 0.1658,
+    "sdvi": 0.8935,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-05",
+    "mentions": 42,
+    "growth_rate": 0.2353,
+    "sdvi": 0.885,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-05",
+    "mentions": 80,
+    "growth_rate": 0.194,
+    "sdvi": 0.8525,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-05",
+    "mentions": 18,
+    "growth_rate": 0.2857,
+    "sdvi": 0.8412,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-05",
+    "mentions": 13,
+    "growth_rate": 0.3,
+    "sdvi": 0.7917,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-05",
+    "mentions": 23,
+    "growth_rate": 0.2105,
+    "sdvi": 0.669,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-05",
+    "mentions": 9,
+    "growth_rate": 0.2857,
+    "sdvi": 0.6578,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-05",
+    "mentions": 68,
+    "growth_rate": 0.1525,
+    "sdvi": 0.6457,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-05",
+    "mentions": 323,
+    "growth_rate": 0.0949,
+    "sdvi": 0.5486,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-05",
+    "mentions": 4,
+    "growth_rate": 0.3333,
+    "sdvi": 0.5364,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "MapReduce",
+    "month": "2024-05",
+    "mentions": 4,
+    "growth_rate": 0.3333,
+    "sdvi": 0.5364,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-05",
+    "mentions": 554,
+    "growth_rate": 0.0716,
+    "sdvi": 0.4524,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-05",
+    "mentions": 270,
+    "growth_rate": 0.0757,
+    "sdvi": 0.4241,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-05",
+    "mentions": 20,
+    "growth_rate": 0.1111,
+    "sdvi": 0.3382,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-05",
+    "mentions": 21,
+    "growth_rate": 0.1053,
+    "sdvi": 0.3255,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-05",
+    "mentions": 9,
+    "growth_rate": 0.125,
+    "sdvi": 0.2878,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-05",
+    "mentions": 102,
+    "growth_rate": 0.0515,
+    "sdvi": 0.2387,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-05",
+    "mentions": 14,
+    "growth_rate": 0.0769,
+    "sdvi": 0.2082,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-05",
+    "mentions": 71,
+    "growth_rate": 0.0441,
+    "sdvi": 0.1886,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-05",
+    "mentions": 29,
+    "growth_rate": 0.0357,
+    "sdvi": 0.1214,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-05",
+    "mentions": 88,
+    "growth_rate": 0.0233,
+    "sdvi": 0.1046,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-05",
+    "mentions": 76,
+    "growth_rate": 0.0133,
+    "sdvi": 0.0578,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-05",
+    "mentions": 345,
+    "growth_rate": 0.0058,
+    "sdvi": 0.0339,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ArgoCD",
+    "month": "2024-05",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-05",
+    "mentions": 25,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-05",
+    "mentions": 101,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-05",
+    "mentions": 44,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-05",
+    "mentions": 4,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-05",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "FastAPI",
+    "month": "2024-05",
+    "mentions": 2,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-05",
+    "mentions": 35,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-05",
+    "mentions": 48,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TailwindCSS",
+    "month": "2024-05",
+    "mentions": 1,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-05",
+    "mentions": 23,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-05",
+    "mentions": 8,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-05",
+    "mentions": 24,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-05",
+    "mentions": 17,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-05",
+    "mentions": 118,
+    "growth_rate": -0.0084,
+    "sdvi": -0.0401,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-05",
+    "mentions": 35,
+    "growth_rate": -0.0278,
+    "sdvi": -0.0996,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-05",
+    "mentions": 32,
+    "growth_rate": -0.0303,
+    "sdvi": -0.1059,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-05",
+    "mentions": 16,
+    "growth_rate": -0.0588,
+    "sdvi": -0.1666,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-05",
+    "mentions": 15,
+    "growth_rate": -0.0625,
+    "sdvi": -0.1733,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-05",
+    "mentions": 14,
+    "growth_rate": -0.0667,
+    "sdvi": -0.1806,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-05",
+    "mentions": 13,
+    "growth_rate": -0.0714,
+    "sdvi": -0.1884,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-05",
+    "mentions": 30,
+    "growth_rate": -0.0625,
+    "sdvi": -0.2146,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-05",
+    "mentions": 80,
+    "growth_rate": -0.0698,
+    "sdvi": -0.3067,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-05",
+    "mentions": 9,
+    "growth_rate": -0.1818,
+    "sdvi": -0.4186,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-05",
+    "mentions": 36,
+    "growth_rate": -0.122,
+    "sdvi": -0.4405,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-05",
+    "mentions": 1,
+    "growth_rate": -0.6667,
+    "sdvi": -0.4621,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-05",
+    "mentions": 94,
+    "growth_rate": -0.1048,
+    "sdvi": -0.4772,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-05",
+    "mentions": 161,
+    "growth_rate": -0.0955,
+    "sdvi": -0.4859,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": -0.2857,
+    "sdvi": -0.5119,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": -0.2857,
+    "sdvi": -0.5119,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Pig",
+    "month": "2024-05",
+    "mentions": 1,
+    "growth_rate": -0.75,
+    "sdvi": -0.5199,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-05",
+    "mentions": 73,
+    "growth_rate": -0.131,
+    "sdvi": -0.5638,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-05",
+    "mentions": 15,
+    "growth_rate": -0.2105,
+    "sdvi": -0.5836,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-05",
+    "mentions": 79,
+    "growth_rate": -0.1413,
+    "sdvi": -0.6192,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-05",
+    "mentions": 2,
+    "growth_rate": -0.6,
+    "sdvi": -0.6592,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-05",
+    "mentions": 129,
+    "growth_rate": -0.14,
+    "sdvi": -0.6815,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-05",
+    "mentions": 27,
+    "growth_rate": -0.2059,
+    "sdvi": -0.6861,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-05",
+    "mentions": 4,
+    "growth_rate": -0.4286,
+    "sdvi": -0.6898,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-05",
+    "mentions": 31,
+    "growth_rate": -0.2051,
+    "sdvi": -0.7108,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-05",
+    "mentions": 7,
+    "growth_rate": -0.3636,
+    "sdvi": -0.7561,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-05",
+    "mentions": 22,
+    "growth_rate": -0.2414,
+    "sdvi": -0.7569,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-05",
+    "mentions": 27,
+    "growth_rate": -0.2286,
+    "sdvi": -0.7617,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-05",
+    "mentions": 15,
+    "growth_rate": -0.2857,
+    "sdvi": -0.7921,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": -0.4444,
+    "sdvi": -0.7963,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-05",
+    "mentions": 5,
+    "growth_rate": -0.4444,
+    "sdvi": -0.7963,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-05",
+    "mentions": 25,
+    "growth_rate": -0.2647,
+    "sdvi": -0.8624,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-05",
+    "mentions": 3,
+    "growth_rate": -0.625,
+    "sdvi": -0.8664,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-05",
+    "mentions": 15,
+    "growth_rate": -0.3182,
+    "sdvi": -0.8822,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-05",
+    "mentions": 6,
+    "growth_rate": -0.4545,
+    "sdvi": -0.8844,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-05",
+    "mentions": 40,
+    "growth_rate": -0.2857,
+    "sdvi": -1.061,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Visual Basic",
+    "month": "2024-06",
+    "mentions": 6,
+    "growth_rate": 2.0,
+    "sdvi": 3.8918,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "AngularJS",
+    "month": "2024-06",
+    "mentions": 3,
+    "growth_rate": 2.0,
+    "sdvi": 2.7726,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Hadoop",
+    "month": "2024-06",
+    "mentions": 26,
+    "growth_rate": 0.625,
+    "sdvi": 2.0599,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Bash",
+    "month": "2024-06",
+    "mentions": 36,
+    "growth_rate": 0.5,
+    "sdvi": 1.8055,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Oracle",
+    "month": "2024-06",
+    "mentions": 168,
+    "growth_rate": 0.3023,
+    "sdvi": 1.5508,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "PySpark",
+    "month": "2024-06",
+    "mentions": 11,
+    "growth_rate": 0.5714,
+    "sdvi": 1.4199,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Terraform",
+    "month": "2024-06",
+    "mentions": 42,
+    "growth_rate": 0.3548,
+    "sdvi": 1.3345,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Computer Vision",
+    "month": "2024-06",
+    "mentions": 21,
+    "growth_rate": 0.4,
+    "sdvi": 1.2364,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "JSP",
+    "month": "2024-06",
+    "mentions": 5,
+    "growth_rate": 0.6667,
+    "sdvi": 1.1946,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Data Science",
+    "month": "2024-06",
+    "mentions": 92,
+    "growth_rate": 0.2603,
+    "sdvi": 1.1798,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "DevOps",
+    "month": "2024-06",
+    "mentions": 117,
+    "growth_rate": 0.2447,
+    "sdvi": 1.1674,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "CI/CD",
+    "month": "2024-06",
+    "mentions": 95,
+    "growth_rate": 0.25,
+    "sdvi": 1.1411,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Scala",
+    "month": "2024-06",
+    "mentions": 33,
+    "growth_rate": 0.32,
+    "sdvi": 1.1284,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Struts",
+    "month": "2024-06",
+    "mentions": 2,
+    "growth_rate": 1.0,
+    "sdvi": 1.0986,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Pig",
+    "month": "2024-06",
+    "mentions": 2,
+    "growth_rate": 1.0,
+    "sdvi": 1.0986,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "LangChain",
+    "month": "2024-06",
+    "mentions": 2,
+    "growth_rate": 1.0,
+    "sdvi": 1.0986,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "dbt",
+    "month": "2024-06",
+    "mentions": 12,
+    "growth_rate": 0.3333,
+    "sdvi": 0.8549,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "TensorFlow",
+    "month": "2024-06",
+    "mentions": 18,
+    "growth_rate": 0.2857,
+    "sdvi": 0.8412,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "SOAP",
+    "month": "2024-06",
+    "mentions": 31,
+    "growth_rate": 0.24,
+    "sdvi": 0.8318,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Elasticsearch",
+    "month": "2024-06",
+    "mentions": 7,
+    "growth_rate": 0.4,
+    "sdvi": 0.8318,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "BigQuery",
+    "month": "2024-06",
+    "mentions": 7,
+    "growth_rate": 0.4,
+    "sdvi": 0.8318,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Deep Learning",
+    "month": "2024-06",
+    "mentions": 25,
+    "growth_rate": 0.25,
+    "sdvi": 0.8145,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Java",
+    "month": "2024-06",
+    "mentions": 186,
+    "growth_rate": 0.1553,
+    "sdvi": 0.8124,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Grafana",
+    "month": "2024-06",
+    "mentions": 8,
+    "growth_rate": 0.3333,
+    "sdvi": 0.7323,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Databricks",
+    "month": "2024-06",
+    "mentions": 28,
+    "growth_rate": 0.2174,
+    "sdvi": 0.7321,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Git",
+    "month": "2024-06",
+    "mentions": 86,
+    "growth_rate": 0.1622,
+    "sdvi": 0.7244,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Node.js",
+    "month": "2024-06",
+    "mentions": 36,
+    "growth_rate": 0.2,
+    "sdvi": 0.7222,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Docker",
+    "month": "2024-06",
+    "mentions": 82,
+    "growth_rate": 0.1549,
+    "sdvi": 0.6845,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "NumPy",
+    "month": "2024-06",
+    "mentions": 9,
+    "growth_rate": 0.2857,
+    "sdvi": 0.6578,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Agile",
+    "month": "2024-06",
+    "mentions": 381,
+    "growth_rate": 0.1043,
+    "sdvi": 0.6201,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "GraphQL",
+    "month": "2024-06",
+    "mentions": 11,
+    "growth_rate": 0.2222,
+    "sdvi": 0.5521,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "RabbitMQ",
+    "month": "2024-06",
+    "mentions": 4,
+    "growth_rate": 0.3333,
+    "sdvi": 0.5364,
+    "quadrant": "Emerging"
+  },
+  {
+    "skill": "Spark",
+    "month": "2024-06",
+    "mentions": 53,
+    "growth_rate": 0.1042,
+    "sdvi": 0.4157,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jenkins",
+    "month": "2024-06",
+    "mentions": 48,
+    "growth_rate": 0.0909,
+    "sdvi": 0.3538,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "SQL",
+    "month": "2024-06",
+    "mentions": 342,
+    "growth_rate": 0.0588,
+    "sdvi": 0.3433,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Scrum",
+    "month": "2024-06",
+    "mentions": 94,
+    "growth_rate": 0.0682,
+    "sdvi": 0.3106,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "Azure",
+    "month": "2024-06",
+    "mentions": 202,
+    "growth_rate": 0.0521,
+    "sdvi": 0.2768,
+    "quadrant": "Established Growth"
+  },
+  {
+    "skill": "PHP",
+    "month": "2024-06",
+    "mentions": 29,
+    "growth_rate": 0.0741,
+    "sdvi": 0.252,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Python",
+    "month": "2024-06",
+    "mentions": 278,
+    "growth_rate": 0.0296,
+    "sdvi": 0.1667,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "PyTorch",
+    "month": "2024-06",
+    "mentions": 19,
+    "growth_rate": 0.0556,
+    "sdvi": 0.1666,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Linux",
+    "month": "2024-06",
+    "mentions": 104,
+    "growth_rate": 0.0196,
+    "sdvi": 0.0912,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Rust",
+    "month": "2024-06",
+    "mentions": 5,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Helm",
+    "month": "2024-06",
+    "mentions": 15,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Hive",
+    "month": "2024-06",
+    "mentions": 10,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Jira",
+    "month": "2024-06",
+    "mentions": 79,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "ETL",
+    "month": "2024-06",
+    "mentions": 66,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ruby",
+    "month": "2024-06",
+    "mentions": 21,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Tableau",
+    "month": "2024-06",
+    "mentions": 80,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Cassandra",
+    "month": "2024-06",
+    "mentions": 9,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Pandas",
+    "month": "2024-06",
+    "mentions": 8,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "REST API",
+    "month": "2024-06",
+    "mentions": 15,
+    "growth_rate": 0.0,
+    "sdvi": 0.0,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Machine Learning",
+    "month": "2024-06",
+    "mentions": 112,
+    "growth_rate": -0.0088,
+    "sdvi": -0.0416,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Angular",
+    "month": "2024-06",
+    "mentions": 41,
+    "growth_rate": -0.0238,
+    "sdvi": -0.089,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "TypeScript",
+    "month": "2024-06",
+    "mentions": 35,
+    "growth_rate": -0.0278,
+    "sdvi": -0.0996,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Perl",
+    "month": "2024-06",
+    "mentions": 16,
+    "growth_rate": -0.0588,
+    "sdvi": -0.1666,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "React",
+    "month": "2024-06",
+    "mentions": 101,
+    "growth_rate": -0.0381,
+    "sdvi": -0.1762,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Microservices",
+    "month": "2024-06",
+    "mentions": 38,
+    "growth_rate": -0.05,
+    "sdvi": -0.1832,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Airflow",
+    "month": "2024-06",
+    "mentions": 12,
+    "growth_rate": -0.0769,
+    "sdvi": -0.1972,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MySQL",
+    "month": "2024-06",
+    "mentions": 33,
+    "growth_rate": -0.0571,
+    "sdvi": -0.2014,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Vue",
+    "month": "2024-06",
+    "mentions": 9,
+    "growth_rate": -0.1,
+    "sdvi": -0.2303,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Scikit-Learn",
+    "month": "2024-06",
+    "mentions": 9,
+    "growth_rate": -0.1,
+    "sdvi": -0.2303,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "JavaScript",
+    "month": "2024-06",
+    "mentions": 112,
+    "growth_rate": -0.0508,
+    "sdvi": -0.2402,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "MongoDB",
+    "month": "2024-06",
+    "mentions": 21,
+    "growth_rate": -0.087,
+    "sdvi": -0.2689,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "AWS",
+    "month": "2024-06",
+    "mentions": 207,
+    "growth_rate": -0.0505,
+    "sdvi": -0.2695,
+    "quadrant": "Stable"
+  },
+  {
+    "skill": "Ansible",
+    "month": "2024-06",
+    "mentions": 29,
+    "growth_rate": -0.0938,
+    "sdvi": -0.319,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Prometheus",
+    "month": "2024-06",
+    "mentions": 4,
+    "growth_rate": -0.2,
+    "sdvi": -0.3219,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Warehouse",
+    "month": "2024-06",
+    "mentions": 26,
+    "growth_rate": -0.1034,
+    "sdvi": -0.3408,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "SVN",
+    "month": "2024-06",
+    "mentions": 3,
+    "growth_rate": -0.25,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "FastAPI",
+    "month": "2024-06",
+    "mentions": 1,
+    "growth_rate": -0.5,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Flask",
+    "month": "2024-06",
+    "mentions": 3,
+    "growth_rate": -0.25,
+    "sdvi": -0.3466,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PowerBI",
+    "month": "2024-06",
+    "mentions": 24,
+    "growth_rate": -0.1111,
+    "sdvi": -0.3576,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Modeling",
+    "month": "2024-06",
+    "mentions": 49,
+    "growth_rate": -0.0926,
+    "sdvi": -0.3623,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "GCP",
+    "month": "2024-06",
+    "mentions": 62,
+    "growth_rate": -0.0882,
+    "sdvi": -0.3654,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Redshift",
+    "month": "2024-06",
+    "mentions": 12,
+    "growth_rate": -0.1429,
+    "sdvi": -0.3665,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "PostgreSQL",
+    "month": "2024-06",
+    "mentions": 20,
+    "growth_rate": -0.1304,
+    "sdvi": -0.397,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Data Engineering",
+    "month": "2024-06",
+    "mentions": 34,
+    "growth_rate": -0.1282,
+    "sdvi": -0.4558,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Kafka",
+    "month": "2024-06",
+    "mentions": 30,
+    "growth_rate": -0.1429,
+    "sdvi": -0.4907,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Go",
+    "month": "2024-06",
+    "mentions": 509,
+    "growth_rate": -0.0812,
+    "sdvi": -0.5062,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "NLP",
+    "month": "2024-06",
+    "mentions": 12,
+    "growth_rate": -0.2,
+    "sdvi": -0.513,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Next.js",
+    "month": "2024-06",
+    "mentions": 1,
+    "growth_rate": -0.75,
+    "sdvi": -0.5199,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "MapReduce",
+    "month": "2024-06",
+    "mentions": 1,
+    "growth_rate": -0.75,
+    "sdvi": -0.5199,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Spring Boot",
+    "month": "2024-06",
+    "mentions": 18,
+    "growth_rate": -0.1818,
+    "sdvi": -0.5353,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Flash",
+    "month": "2024-06",
+    "mentions": 17,
+    "growth_rate": -0.1905,
+    "sdvi": -0.5506,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "COBOL",
+    "month": "2024-06",
+    "mentions": 3,
+    "growth_rate": -0.4,
+    "sdvi": -0.5545,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "C#",
+    "month": "2024-06",
+    "mentions": 3,
+    "growth_rate": -0.4,
+    "sdvi": -0.5545,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "HTML",
+    "month": "2024-06",
+    "mentions": 88,
+    "growth_rate": -0.1287,
+    "sdvi": -0.5777,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Redis",
+    "month": "2024-06",
+    "mentions": 9,
+    "growth_rate": -0.3077,
+    "sdvi": -0.7085,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Ant",
+    "month": "2024-06",
+    "mentions": 2,
+    "growth_rate": -0.7143,
+    "sdvi": -0.7847,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "CSS",
+    "month": "2024-06",
+    "mentions": 65,
+    "growth_rate": -0.1875,
+    "sdvi": -0.7856,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Django",
+    "month": "2024-06",
+    "mentions": 5,
+    "growth_rate": -0.4444,
+    "sdvi": -0.7963,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "C++",
+    "month": "2024-06",
+    "mentions": 4,
+    "growth_rate": -0.5,
+    "sdvi": -0.8047,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Kubernetes",
+    "month": "2024-06",
+    "mentions": 66,
+    "growth_rate": -0.1951,
+    "sdvi": -0.8203,
+    "quadrant": "Declining"
+  },
+  {
+    "skill": "Snowflake",
+    "month": "2024-06",
+    "mentions": 30,
+    "growth_rate": -0.2683,
+    "sdvi": -0.9213,
+    "quadrant": "Declining"
+  }
+];
+
+    let currentMonth = "2024-06";
+    let selectedSkill = "Hadoop";
+    let scatterChart = null;
+    let trendChart = null;
+
+    // Color definitions
+    const COLOR_MAP = {
+      "Emerging": "#00f5d4",
+      "Established Growth": "#10b981",
+      "Stable": "#f59e0b",
+      "Declining": "#f43f5e"
+    };
+
+    // DOM Elements
+    const monthSelect = document.getElementById("monthSelect");
+    const kpiEmerging = document.getElementById("kpiEmerging");
+    const kpiEstablished = document.getElementById("kpiEstablished");
+    const kpiStable = document.getElementById("kpiStable");
+    const kpiDeclining = document.getElementById("kpiDeclining");
+    const leaderboardList = document.getElementById("leaderboardList");
+    const leaderboardMonthBadge = document.getElementById("leaderboardMonthBadge");
+    const skillSearchInput = document.getElementById("skillSearchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const selectedSkillBadge = document.getElementById("selectedSkillBadge");
+    const quickChips = document.getElementById("quickChips");
+    const radarCanvas = document.getElementById("radarCanvas");
+    const pulseTooltip = document.getElementById("pulseTooltip");
+
+    // Init App
+    function init() {
+      updateDashboard(currentMonth);
+
+      monthSelect.addEventListener("change", (e) => {
+        currentMonth = e.target.value;
+        leaderboardMonthBadge.innerText = currentMonth;
+        updateDashboard(currentMonth);
+      });
+
+      searchBtn.addEventListener("click", () => {
+        const query = skillSearchInput.value.trim();
+        if (query) selectSkill(query);
+      });
+
+      skillSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const query = skillSearchInput.value.trim();
+          if (query) selectSkill(query);
+        }
+      });
+
+      // Chips
+      quickChips.querySelectorAll(".chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          quickChips.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+          chip.classList.add("active");
+          selectSkill(chip.getAttribute("data-skill"));
+        });
+      });
+
+      // Init Radar Canvas
+      initRadarCanvas();
+    }
+
+    function selectSkill(skillName) {
+      const match = RAW_SDVI_DATA.find(d => d.skill.toLowerCase() === skillName.toLowerCase());
+      if (match) {
+        selectedSkill = match.skill;
+        selectedSkillBadge.innerText = selectedSkill;
+        renderTrendChart(selectedSkill);
+      } else {
+        alert(`Skill "${skillName}" not found in taxonomy.`);
+      }
+    }
+
+    function updateDashboard(month) {
+      const monthData = RAW_SDVI_DATA.filter(d => d.month === month);
+
+      // KPI Counts
+      const counts = { "Emerging": 0, "Established Growth": 0, "Stable": 0, "Declining": 0 };
+      monthData.forEach(d => {
+        if (counts[d.quadrant] !== undefined) counts[d.quadrant]++;
+      });
+
+      kpiEmerging.innerText = counts["Emerging"];
+      kpiEstablished.innerText = counts["Established Growth"];
+      kpiStable.innerText = counts["Stable"];
+      kpiDeclining.innerText = counts["Declining"];
+
+      // Leaderboard: Top 10 by SDVI
+      const sortedBySDVI = [...monthData].sort((a, b) => b.sdvi - a.sdvi);
+      renderLeaderboard(sortedBySDVI.slice(0, 10));
+
+      // Scatter Plot
+      renderScatterChart(monthData);
+
+      // Trend Chart
+      renderTrendChart(selectedSkill);
+
+      // Trigger radar data update
+      currentRadarSkills = monthData;
+    }
+
+    function renderLeaderboard(topSkills) {
+      leaderboardList.innerHTML = "";
+      if (topSkills.length === 0) return;
+
+      const maxSdvi = Math.max(...topSkills.map(s => s.sdvi), 0.1);
+
+      topSkills.forEach((item, index) => {
+        const rank = index + 1;
+        const rankClass = rank === 1 ? "top-1" : rank === 2 ? "top-2" : rank === 3 ? "top-3" : "";
+        const fillPct = Math.max(8, Math.min(100, (item.sdvi / maxSdvi) * 100));
+        const color = COLOR_MAP[item.quadrant] || "#00f5d4";
+
+        const div = document.createElement("div");
+        div.className = "leader-item";
+        div.innerHTML = `
+          <div class="leader-header">
+            <div class="leader-left">
+              <span class="leader-rank ${rankClass}">#${rank}</span>
+              <span class="leader-name">${item.skill}</span>
+              <span style="font-size: 0.72rem; color: ${color}; border: 1px solid ${color}44; padding: 2px 6px; border-radius: 4px;">${item.quadrant}</span>
+            </div>
+            <div class="leader-metrics">
+              <span class="leader-sdvi">SDVI: ${item.sdvi.toFixed(2)}</span>
+              <span class="leader-growth">${item.growth_rate >= 0 ? '+' : ''}${(item.growth_rate * 100).toFixed(1)}%</span>
+              <span style="color: var(--text-dim);">${item.mentions} mentions</span>
+            </div>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width: ${fillPct}%; background: linear-gradient(90deg, ${color}88, ${color});"></div>
+          </div>
+        `;
+
+        div.addEventListener("click", () => {
+          selectSkill(item.skill);
+        });
+
+        leaderboardList.appendChild(div);
+      });
+    }
+
+    function renderScatterChart(monthData) {
+      const ctx = document.getElementById("scatterChart").getContext("2d");
+      if (scatterChart) scatterChart.destroy();
+
+      const datasets = [
+        { label: "Emerging", data: [], backgroundColor: "#00f5d4", borderColor: "#00f5d4", pointRadius: 6 },
+        { label: "Established Growth", data: [], backgroundColor: "#10b981", borderColor: "#10b981", pointRadius: 6 },
+        { label: "Stable", data: [], backgroundColor: "#f59e0b", borderColor: "#f59e0b", pointRadius: 5 },
+        { label: "Declining", data: [], backgroundColor: "#f43f5e", borderColor: "#f43f5e", pointRadius: 5 }
+      ];
+
+      monthData.forEach(item => {
+        const ds = datasets.find(d => d.label === item.quadrant);
+        if (ds) {
+          ds.data.push({
+            x: Math.max(1, item.mentions),
+            y: item.sdvi,
+            skill: item.skill,
+            growth: item.growth_rate
+          });
+        }
+      });
+
+      scatterChart = new Chart(ctx, {
+        type: "scatter",
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } }
+            },
+            tooltip: {
+              backgroundColor: "rgba(11, 15, 25, 0.95)",
+              borderColor: "#38bdf8",
+              borderWidth: 1,
+              titleFont: { family: "Chakra Petch", size: 14, weight: "bold" },
+              bodyFont: { family: "JetBrains Mono", size: 12 },
+              callbacks: {
+                title: (items) => items[0].raw.skill,
+                label: (item) => [
+                  `SDVI: ${item.raw.y.toFixed(3)}`,
+                  `Mentions: ${item.raw.x}`,
+                  `Growth Rate: ${item.raw.growth >= 0 ? '+' : ''}${(item.raw.growth * 100).toFixed(1)}%`
+                ]
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: "logarithmic",
+              title: { display: true, text: "Job Mentions (Logarithmic Scale)", color: "#94a3b8" },
+              grid: { color: "rgba(255, 255, 255, 0.06)" },
+              ticks: { color: "#64748b", font: { family: "JetBrains Mono" } }
+            },
+            y: {
+              title: { display: true, text: "Skill Demand Velocity Index (SDVI)", color: "#94a3b8" },
+              grid: { color: "rgba(255, 255, 255, 0.06)" },
+              ticks: { color: "#64748b", font: { family: "JetBrains Mono" } }
+            }
+          }
+        }
+      });
+    }
+
+    function renderTrendChart(skillName) {
+      const ctx = document.getElementById("trendChart").getContext("2d");
+      if (trendChart) trendChart.destroy();
+
+      const skillRecords = RAW_SDVI_DATA
+        .filter(d => d.skill.toLowerCase() === skillName.toLowerCase())
+        .sort((a, b) => a.month.localeCompare(b.month));
+
+      const labels = skillRecords.map(d => d.month);
+      const sdviValues = skillRecords.map(d => d.sdvi);
+      const mentionValues = skillRecords.map(d => d.mentions);
+
+      trendChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "SDVI Velocity",
+              data: sdviValues,
+              borderColor: "#00f5d4",
+              backgroundColor: "rgba(0, 245, 212, 0.15)",
+              borderWidth: 3,
+              fill: true,
+              tension: 0.3,
+              yAxisID: "y"
+            },
+            {
+              label: "Monthly Mentions",
+              data: mentionValues,
+              borderColor: "#38bdf8",
+              backgroundColor: "rgba(56, 189, 248, 0.2)",
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.2,
+              yAxisID: "y1"
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: "#94a3b8", font: { family: "JetBrains Mono", size: 11 } }
+            },
+            tooltip: {
+              backgroundColor: "rgba(11, 15, 25, 0.95)",
+              borderColor: "#00f5d4",
+              borderWidth: 1,
+              titleFont: { family: "Chakra Petch", size: 14 },
+              bodyFont: { family: "JetBrains Mono", size: 12 }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: "rgba(255, 255, 255, 0.05)" },
+              ticks: { color: "#94a3b8", font: { family: "JetBrains Mono" } }
+            },
+            y: {
+              title: { display: true, text: "SDVI", color: "#00f5d4" },
+              grid: { color: "rgba(255, 255, 255, 0.05)" },
+              ticks: { color: "#00f5d4", font: { family: "JetBrains Mono" } }
+            },
+            y1: {
+              position: "right",
+              title: { display: true, text: "Mentions", color: "#38bdf8" },
+              grid: { drawOnChartArea: false },
+              ticks: { color: "#38bdf8", font: { family: "JetBrains Mono" } }
+            }
+          }
+        }
+      });
+    }
+
+    // Radar Canvas Animation
+    let currentRadarSkills = [];
+    let radarAngle = 0;
+    let hoveredNode = null;
+
+    function initRadarCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = radarCanvas.getBoundingClientRect();
+      radarCanvas.width = rect.width * dpr;
+      radarCanvas.height = rect.height * dpr;
+      const ctx = radarCanvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      radarCanvas.addEventListener("mousemove", (e) => {
+        const r = radarCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - r.left;
+        const mouseY = e.clientY - r.top;
+        checkRadarHover(mouseX, mouseY);
+      });
+
+      radarCanvas.addEventListener("mouseleave", () => {
+        pulseTooltip.style.display = "none";
+        hoveredNode = null;
+      });
+
+      radarCanvas.addEventListener("click", () => {
+        if (hoveredNode) {
+          selectSkill(hoveredNode.skill);
+        }
+      });
+
+      animateRadar(ctx, rect.width, rect.height);
+    }
+
+    function checkRadarHover(mx, my) {
+      const rect = radarCanvas.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+
+      let found = null;
+      currentRadarSkills.forEach((s, idx) => {
+        const pos = getRadarPosition(s, idx, cx, cy);
+        const dist = Math.hypot(mx - pos.x, my - pos.y);
+        if (dist <= pos.radius + 4) {
+          found = { ...s, x: pos.x, y: pos.y };
+        }
+      });
+
+      hoveredNode = found;
+      if (found) {
+        pulseTooltip.style.display = "block";
+        pulseTooltip.style.left = `${found.x + 15}px`;
+        pulseTooltip.style.top = `${found.y - 15}px`;
+        pulseTooltip.innerHTML = `
+          <div style="font-weight:bold; color: #fff; font-size: 0.95rem;">${found.skill}</div>
+          <div style="color: ${COLOR_MAP[found.quadrant]}">${found.quadrant}</div>
+          <div style="color: var(--text-dim); margin-top:4px;">SDVI: <span style="color:#fff">${found.sdvi.toFixed(2)}</span></div>
+          <div style="color: var(--text-dim);">Growth: <span style="color:#fff">${found.growth_rate >= 0 ? '+' : ''}${(found.growth_rate*100).toFixed(1)}%</span></div>
+          <div style="color: var(--text-dim);">Mentions: <span style="color:#fff">${found.mentions}</span></div>
+        `;
+      } else {
+        pulseTooltip.style.display = "none";
+      }
+    }
+
+    function getRadarPosition(item, index, cx, cy) {
+      const maxR = Math.min(cx, cy) - 35;
+      
+      // Quadrant base angle (canvas: 0=right, increases clockwise, y-down):
+      // Emerging:          Top-Right  → angle 1.75π (315°)
+      // Established Growth: Bottom-Right → angle 0.25π  (45°)
+      // Stable:             Bottom-Left  → angle 0.75π (135°)
+      // Declining:          Top-Left     → angle 1.25π (225°)
+      let baseAngle = 0;
+      if (item.quadrant === "Emerging") baseAngle = 1.75 * Math.PI;
+      else if (item.quadrant === "Established Growth") baseAngle = 0.25 * Math.PI;
+      else if (item.quadrant === "Stable") baseAngle = 0.75 * Math.PI;
+      else baseAngle = 1.25 * Math.PI;
+
+      // Deterministic spread
+      const hash = Math.sin(index * 789 + item.skill.length) * 0.45;
+      const angle = baseAngle + hash;
+
+      // Distance from center: higher momentum/mentions placed nicely in ring zones
+      const normalizedSdvi = Math.max(0, Math.min(1, (item.sdvi + 1) / 3));
+      const dist = 35 + (normalizedSdvi * (maxR - 45)) + (Math.abs(hash) * 20);
+
+      const x = cx + Math.cos(angle) * dist;
+      const y = cy + Math.sin(angle) * dist;
+
+      // Pulse radius based on SDVI
+      const baseRadius = Math.max(3, Math.min(10, 4 + item.sdvi * 2.5));
+      return { x, y, radius: baseRadius, color: COLOR_MAP[item.quadrant] || "#00f5d4" };
+    }
+
+    function animateRadar(ctx, w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.min(cx, cy) - 30;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw Concentric Rings
+      const rings = [0.25, 0.5, 0.75, 1.0];
+      rings.forEach((rFactor, i) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, maxR * rFactor, 0, Math.PI * 2);
+        ctx.strokeStyle = i === 3 ? "rgba(0, 245, 212, 0.4)" : "rgba(56, 189, 248, 0.12)";
+        ctx.lineWidth = i === 3 ? 1.5 : 1;
+        ctx.setLineDash(i === 3 ? [] : [4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      // Crosshairs
+      ctx.beginPath();
+      ctx.moveTo(cx - maxR, cy); ctx.lineTo(cx + maxR, cy);
+      ctx.moveTo(cx, cy - maxR); ctx.lineTo(cx, cy + maxR);
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.15)";
+      ctx.stroke();
+
+      // Quadrant labels on canvas
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.fillStyle = "rgba(0, 245, 212, 0.4)";
+      ctx.fillText("Q1 // EMERGING", cx + 25, cy - 20);
+      ctx.fillStyle = "rgba(16, 185, 129, 0.4)";
+      ctx.fillText("Q2 // ESTABLISHED", cx + 25, cy + 30);
+      ctx.fillStyle = "rgba(245, 158, 11, 0.4)";
+      ctx.fillText("Q3 // STABLE", cx - 110, cy + 30);
+      ctx.fillStyle = "rgba(244, 63, 94, 0.4)";
+      ctx.fillText("Q4 // DECLINING", cx - 110, cy - 20);
+
+      // Rotating radar beam
+      radarAngle += 0.015;
+      const beamX = cx + Math.cos(radarAngle) * maxR;
+      const beamY = cy + Math.sin(radarAngle) * maxR;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+      grad.addColorStop(0, "rgba(0, 245, 212, 0)");
+      grad.addColorStop(1, "rgba(0, 245, 212, 0.15)");
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, maxR, radarAngle - 0.3, radarAngle);
+      ctx.lineTo(cx, cy);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Radar line
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(beamX, beamY);
+      ctx.strokeStyle = "rgba(0, 245, 212, 0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Draw Skill Blips
+      const now = Date.now() / 1000;
+      currentRadarSkills.forEach((s, idx) => {
+        const pos = getRadarPosition(s, idx, cx, cy);
+        
+        // Pulsing halo for emerging and established
+        const pulseSpeed = s.quadrant === "Emerging" ? 4 : 2;
+        const pulse = Math.sin(now * pulseSpeed + idx) * 2.5;
+        const currentR = Math.max(2, pos.radius + pulse);
+
+        // Glow ring
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, currentR + 3, 0, Math.PI * 2);
+        ctx.fillStyle = pos.color + "25";
+        ctx.fill();
+
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, currentR, 0, Math.PI * 2);
+        ctx.fillStyle = pos.color;
+        ctx.shadowColor = pos.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Label for top emerging
+        if (s.quadrant === "Emerging" || (s.quadrant === "Established Growth" && s.sdvi > 1.4)) {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "9px 'JetBrains Mono', monospace";
+          ctx.fillText(s.skill, pos.x + currentR + 4, pos.y + 3);
+        }
+      });
+
+      requestAnimationFrame(() => animateRadar(ctx, w, h));
+    }
+
+    // Kick off
+    init();
+  </script>
+</body>
+</html>
