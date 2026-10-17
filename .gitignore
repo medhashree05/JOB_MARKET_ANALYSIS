@@ -45,3 +45,18 @@ dashboard/data_loader_backup.py
 dashboard/data/jobs_cleaned_pipe.txt
 dashboard/data/jobs_cleaned_safe.txt
 dashboard/data/time_based_safe.txt
+
+# --- Additional virtual environments ---
+.venv-dashboard/
+
+# --- LaTeX build artifacts ---
+*.aux
+*.out
+*.log
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
